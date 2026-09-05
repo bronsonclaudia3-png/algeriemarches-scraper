@@ -1,13 +1,12 @@
 """
-AlgerieMarches Scraper v3 — single login, single disconnect, keep session.
+AlgerieMarches Scraper v4 — Dual Scrape (Appels d'Offres & Avis d'Attributions)
+Automated daily sync to Google Sheets & local Downloads Excel file.
 
-How it works:
-  1. Try saved cookies first (skip login entirely if they work).
-  2. If no cookies or expired: login once -> disconnect ONE competitor
-     (promotes our session from temp to normal) -> scrape with that session.
-  3. Save cookies to disk for next run.
-  
-  Never signout. Never drain the pool. Just disconnect one and use.
+Targets:
+  1. "APPEL D'OFFRE 2026" (11 columns)
+  2. "AVIS D'ATTRIBUTIONS 2026" (15 columns)
+Domain:
+  Artificial turf, stadiums, sports facilities, playgrounds, school courtyards (TAPIDOR).
 """
 
 import csv
@@ -27,8 +26,6 @@ import gspread
 import openpyxl
 import requests
 from dotenv import load_dotenv
-
-
 
 # ── Paths ────────────────────────────────────────────────────────────────────
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -61,89 +58,99 @@ PASSWORD = os.getenv("AM_PASSWORD", "")
 
 BASE_URL = "https://algeriemarches.com"
 API_BASE = "https://api.algeriemarches.com/api"
+API_PROXY = f"{BASE_URL}/api/proxy/ads"
 
 CSRF_URL = f"{BASE_URL}/api/auth/csrf"
 LOGIN_URL = f"{BASE_URL}/api/auth/callback/credentials"
 SESSIONS_URL = f"{BASE_URL}/api/auth/active-sessions"
 DISCONNECT_URL = f"{BASE_URL}/api/proxy/auth/disconnect-session"
 
-# Scrape config
-ANNONCE_TYPE = "avis-attribution"
 PAGE_SIZE = 20
 MAX_PAGES = 3
-KEYWORDS_ENV = os.getenv("AM_KEYWORDS", "alimentation|fourniture")
-KEYWORD_FILTER = re.compile(KEYWORDS_ENV, re.IGNORECASE) if KEYWORDS_ENV else None
+
+# Sport & turf keywords for TAPIDOR
+DEFAULT_KEYWORDS = r"\b(?:gazon|pelouse|engazonnement|stade|terrain|sport|football|jeux|matico|matiquo|athletisme|cour|cours)\b"
+KEYWORDS_ENV = os.getenv("AM_KEYWORDS", "").strip()
+ACTIVE_KEYWORDS = KEYWORDS_ENV if KEYWORDS_ENV else DEFAULT_KEYWORDS
+KEYWORD_FILTER = re.compile(ACTIVE_KEYWORDS, re.IGNORECASE)
 
 UA = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
 )
 
-# ── Excel Helpers (Downloads master sync) ─────────────────────────────────────
+# ── Classification & Parsing Helpers ─────────────────────────────────────────
 
-def strip_accents(text: str) -> str:
-    return "".join(c for c in unicodedata.normalize("NFD", text) if unicodedata.category(c) != "Mn")
+def strip_accents(s: str) -> str:
+    return "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn")
 
-ACTIONS = [
-    "REALISATION, REHABILITATION ET REVETEMENT",
-    "REALISATION,REHABILITATION ET REVETEMENT",
-    "REALISATION ET AMENAGEMENT",
-    "AMENAGEMENT ET REVETEMENT",
-    "REVETEMENT ET AMENAGEMENT",
-    "FOURNITURE ET POSE",
-    "FOURNITURE ET INSTALLATION",
-    "ETUDE ET SUIVI",
-    "FOURNITURE",
-    "REALISATION",
-    "AMENAGEMENT",
-    "REVETEMENT",
-    "REHABILITATION",
-    "RENOVATION",
-    "ACHEVEMENT",
-    "ACQUISITION",
-    "APPROVISIONNEMENT",
-    "ALIMENTATION",
-    "ENTRETIEN",
-    "TRAVAUX",
-]
+def classify_action(titre: str) -> str:
+    """Classify the action verb for Col 3 (TITRE D'APPEL D'OFFRE / TITRE D'AVIS D'ATTRIBUTION)."""
+    t_norm = strip_accents(titre).upper()
 
-def parse_titre_and_type(titre: str):
-    t_clean = titre.strip()
-    t_norm = strip_accents(t_clean).upper()
-    
-    action = "REALISATION"
-    for a in ACTIONS:
-        if a in t_norm:
-            action = a
-            break
-            
-    known_projects = [
-        "TERRAINS SPORTIFS", "TERRAIN SPORTIF",
-        "TERRAINS DE FOOTBALL", "TERRAIN DE FOOTBALL",
-        "STADE DE PROXIMITE", "TERRAIN SPORTIF DE PROXIMITE",
-        "STADE DE FOOTBALL", "STADE MUNICIPAL", "STADE MATICO", "STADE",
-        "SALLES MULTI-SPORTS", "SALLE MULTI-SPORTS", "SALLE DE SPORT",
-        "GAZON SYNTHETIQUE", "AIRES DE JEUX", "AIRE DE JEUX",
-        "ECOLES PRIMAIRES", "ECOLE PRIMAIRE", "MATICO",
-        "ALIMENTATION SCOLAIRE", "EQUIPEMENTS BUREAUTIQUE ET INFORMATIQUES",
-        "PRODUITS RADIO PHARMACEUTIQUES"
+    patterns = [
+        ("AMÉNAGEMENT ET REVÊTEMENT", r"\bAMENAGEMENT\b.*\bREVETEMENT\b|\bREVETEMENT\b.*\bAMENAGEMENT\b"),
+        ("RÉALISATION ET REVÊTEMENT", r"\bREALISATION\b.*\bREVETEMENT\b|\bREVETEMENT\b.*\bREALISATION\b"),
+        ("RÉALISATION ET RÉHABILITATION", r"\bREALISATION\b.*\bREHABILITATION\b|\bREALISATION\b.*\bRH[EÉ]ABILITATION\b"),
+        ("RÉALISATION ET AMÉNAGEMENT", r"\bREALISATION\b.*\bAMENAGEMENT\b|\bAMENAGEMENT\b.*\bREALISATION\b"),
+        ("AMÉNAGEMENT ET RÉHABILITATION", r"\bAMENAGEMENT\b.*\bREHABILITATION\b|\bREHABILITATION\b.*\bAMENAGEMENT\b"),
+        ("RHÉABILITATION ET REVÊTEMENT", r"\bRH?EABILITATION\b.*\bREVETEMENT\b|\bREVETEMENT\b.*\bRH?EABILITATION\b"),
+        ("AMÉNAGEMENT ET COUVERTURE", r"\bAMENAGEMENT\b.*\bCOUVERTURE\b|\bCOUVERTURE\b.*\bAMENAGEMENT\b"),
+        ("TRAVAUX D'ENGAZONNEMENT", r"\bTRAVAUX D'?ENGAZONNEMENT\b|\bENGAZONNEMENT\b"),
+        ("FOURNITURE ET POSE", r"\bFOURNITURE ET POSE\b|\bFOURNITURE\b.*\bPOSE\b"),
+        ("FOURNITURE ET INSTALLATION", r"\bFOURNITURE ET INSTALLATION\b"),
+        ("REMISE À NIVEAU", r"\bREMISE A NIVEAU\b"),
+        ("RÉALISATION", r"\bREALISATION\b"),
+        ("AMÉNAGEMENT", r"\bAMENAGEMENT\b"),
+        ("REVÊTEMENT", r"\bREVETEMENT\b|\bREVENTEMENT\b"),
+        ("RÉHABILITATION", r"\bREHABILITATION\b|\bRH[EÉ]ABILITATION\b|\bREHABITATION\b"),
+        ("FOURNITURE", r"\bFOURNITURE\b"),
+        ("RÉNOVATION", r"\bRENOVATION\b"),
+        ("ACHÈVEMENT", r"\bACHEVEMENT\b"),
+        ("CONSTRUCTION", r"\bCONSTRUCTION\b"),
+        ("RÉFECTION", r"\bREFECTION\b"),
+        ("COUVERTURE", r"\bCOUVERTURE\b"),
+        ("ÉTUDE ET SUIVI", r"\bETUDE ET SUIVI\b|\bETUDE\b.*\bSUIVI\b"),
+        ("SUIVI ET RÉALISATION", r"\bSUIVI\b.*\bREALISATION\b"),
+        ("SUIVI ET AMÉNAGEMENT", r"\bSUIVI\b.*\bAMENAGEMENT\b"),
+        ("TRAVAUX", r"\bTRAVAUX\b"),
     ]
-    
-    proj_type = None
-    for kp in known_projects:
-        if kp in t_norm:
-            proj_type = kp
-            break
-            
-    if not proj_type:
-        rest = t_norm
-        for a in ACTIONS:
-            rest = re.sub(rf"^\b{re.escape(a)}\b", "", rest).strip()
-        rest = re.sub(r"^(?:DES|DU|DE LA|DE L'|DE|D'|AU PROFIT DU|AU PROFIT DE LA|AU PROFIT DE|POUR)\s+", "", rest).strip()
-        rest = re.split(r"\b(?:AU PROFIT|POUR LE COMPTE|DANS LA WILAYA|A LA WILAYA)\b", rest)[0].strip()
-        proj_type = rest[:40].strip() if rest else "DIVERS"
+    for action_label, pattern in patterns:
+        if re.search(pattern, t_norm):
+            return action_label
+    return "TRAVAUX"
 
-    return action, proj_type
+def classify_type_projet(titre: str) -> str:
+    """Classify the facility / project type for Col 5 (TYPE DE PROJET)."""
+    t_norm = strip_accents(titre).upper()
+
+    facility_patterns = [
+        ("STADE DE PROXIMITÉ", r"\bSTADES?\s+(?:DE\s+)?PROXIMIT[EÉ]\b"),
+        ("STADE DE FOOTBALL", r"\bSTADES?\s+DE\s+FOOTBALL\b|\bSTADES?\s+DE\s+FOOT\b"),
+        ("STADE COMMUNAL", r"\bSTADES?\s+COMMUNAU?X?\b|\bSTADES?\s+COMMUNALES?\b"),
+        ("STADE MUNICIPAL", r"\bSTADES?\s+MUNICIPAU?X?\b|\bSTADES?\s+MUNICIPALES?\b"),
+        ("STADE MATICO", r"\bSTADES?\s+MATICO\b"),
+        ("STADE SPORTIF", r"\bSTADES?\s+SPORTIFS?\b"),
+        ("STADE", r"\bSTADES?\b"),
+        ("TERRAIN DE FOOTBALL", r"\bTERRAINS?\s+DE\s+FOOTBALL\b|\bTERRAINS?\s+DE\s+FOOT\b"),
+        ("TERRAIN SPORTIF DE PROXIMITÉ", r"\bTERRAINS?\s+SPORTIFS?\s+DE\s+PROXIMIT[EÉ]\b"),
+        ("TERRAIN DE PROXIMITÉ", r"\bTERRAINS?\s+DE\s+PROXIMIT[EÉ]\b"),
+        ("TERRAIN DE SPORT", r"\bTERRAINS?\s+DE\s+SPORTS?\b|\bTERRAINS?\s+SPORTIFS?\b"),
+        ("TERRAIN DE JEU", r"\bTERRAINS?\s+DE\s+JEUX?\b"),
+        ("TERRAIN GAZONNÉ", r"\bTERRAINS?\s+GAZONN[EÉ]S?\b|\bTERRAINS?\s+GAZONS?\b"),
+        ("TERRAIN", r"\bTERRAINS?\b"),
+        ("AIRE DE JEUX", r"\bAIRES?\s+DE\s+JEUX?\b|\bESPACES?\s+DE\s+JEUX?\b|\bAIR\s+DE\s+JEUX?\b"),
+        ("MATICO", r"\bMATICO\b|\bMATIQUO\b"),
+        ("COUR ECOLE PRIMAIRE", r"\bCOURS?\s+(?:D'?)?ECOLES?\s+PRIMAIRES?\b|\bECOLES?\s+PRIMAIRES?\b|\bCOURS?\s+(?:D'?)?ECOLES?\b"),
+        ("COUR", r"\bCOURS?\b"),
+        ("PISTE D'ATHLETISME", r"\bPISTES?\s+(?:D'?)?ATHLETISME\b|\bATHLETISME\b"),
+        ("SALLE DE SPORT", r"\bSALLES?\s+MULTI[\s\-]SPORTS?\b|\bSALLES?\s+DE\s+SPORTS?\b|\bCOMPLEXES?\s+SPORTIFS?\b|\bSALLE\s+OMNISPORTS?\b"),
+        ("GAZON SYNTHÉTIQUE", r"\bGAZONS?\s+SYNTH[EÉ]TIQUES?\b|\bPELOUSES?\s+SYNTH[EÉ]TIQUES?\b|\bGAZONS?\b"),
+    ]
+    for facility_label, pattern in facility_patterns:
+        if re.search(pattern, t_norm):
+            return facility_label
+    return "INFRASTRUCTURE SPORTIVE"
 
 def parse_commune(titre: str, annonceur: str) -> str:
     combined = f"{annonceur} {titre}".upper()
@@ -156,6 +163,24 @@ def parse_commune(titre: str, annonceur: str) -> str:
         if words:
             return words[:30].strip()
     return "/"
+
+def clean_annonceur(ann_raw: str) -> str:
+    if not ann_raw:
+        return "/"
+    ann_upper = ann_raw.upper().strip()
+    if "COMMUNE" in ann_upper or "A.P.C" in ann_upper or "APC" in ann_upper:
+        return "COMMUNE"
+    if "DJS" in ann_upper or "JEUNESSE ET SPORT" in ann_upper or "JEUNESSE ET DES SPORT" in ann_upper:
+        return "DJS DE LA WILAYA"
+    if "DEP" in ann_upper or "EQUIPEMENT PUBLIC" in ann_upper or "EQUIPEMENTS PUBLICS" in ann_upper:
+        return "DEP DE LA WILAYA"
+    if "ADMINISTRATION LOCALE" in ann_upper or "D.A.L" in ann_upper or "DAL" in ann_upper:
+        return "DIRECTION DE L'ADMINISTRATION LOCALE DE LA WILAYA"
+    if "EDUCATION" in ann_upper:
+        return "DIRECTION DE L'EDUCATION DE LA WILAYA"
+    if "FORMATION ET DE L'ENSEIGNEMENT" in ann_upper:
+        return "DIRECTION DE LA FORMATION ET DE L'ENSEIGNEMENT PROFESSIONNELS"
+    return ann_raw[:50].strip()
 
 def parse_budget(montant_str: str):
     if not montant_str:
@@ -191,29 +216,34 @@ def get_latest_downloads_excel() -> Path | None:
     downloads = Path.home() / "Downloads"
     if not downloads.exists():
         return None
-    files = [f for f in downloads.glob("*.xlsx") if not f.name.startswith("~$")]
+    files = [f for f in downloads.glob("*.xlsx") if not f.name.startswith("~$") and not f.name.endswith("_BACKUP.xlsx")]
     if not files:
         return None
     files.sort(key=lambda f: f.stat().st_mtime, reverse=True)
     return files[0]
 
-def append_results_to_excel(results: list[dict], excel_path: Path | None = None) -> int:
+# ── Excel Local Sync ─────────────────────────────────────────────────────────
+
+def append_to_excel(results: list[dict], notice_type: str, excel_path: Path | None = None) -> int:
     """
-    Append new scraped results into the latest downloads .xlsx file matching the existing structure.
-    Returns the number of new rows added.
+    Append results to the matching sheet in the Downloads Excel file.
+    - notice_type 'appels-doffres' -> 'APPEL D'OFFRE 2026' (11 columns)
+    - notice_type 'avis-attribution' -> 'AVIS D'ATTRIBUTIONS 2026' (15 columns)
     """
     if excel_path is None:
         excel_path = get_latest_downloads_excel()
-        
+
     if not excel_path or not excel_path.exists():
-        log.warning("No .xlsx file found in Downloads to update.")
+        log.warning("No Excel file found in Downloads to update.")
         return 0
 
-    log.info("Checking Downloads Excel file: %s", excel_path.name)
+    target_sheet = "APPEL D'OFFRE 2026" if notice_type == "appels-doffres" else "AVIS D'ATTRIBUTIONS 2026"
+    log.info("Checking Downloads Excel file: %s (Target: %s)", excel_path.name, target_sheet)
+
     try:
         wb = openpyxl.load_workbook(excel_path)
     except PermissionError:
-        log.warning("File %s is currently open. Will save updated copy to Downloads.", excel_path.name)
+        log.warning("File %s is currently open. Saving to updated copy.", excel_path.name)
         excel_path = excel_path.parent / f"{excel_path.stem}_updated.xlsx"
         if excel_path.exists():
             wb = openpyxl.load_workbook(excel_path)
@@ -223,34 +253,18 @@ def append_results_to_excel(results: list[dict], excel_path: Path | None = None)
         log.error("Failed to open workbook %s: %s", excel_path, e)
         return 0
 
-    # Determine sheet
-    sheet_name = None
-    curr_year = datetime.now().year
-    candidates = [
-        f"AVIS D'ATTRIBUTIONS {curr_year}",
-        f"AVIS D'ATTRIBUTION {curr_year}",
-        "AVIS D'ATTRIBUTIONS 2026",
-        "AVIS D'ATTRIBUTIONS",
-        "AVIS D'ATTRIBUTION",
-    ]
-    for c in candidates:
-        if c in wb.sheetnames:
-            sheet_name = c
-            break
-            
-    if not sheet_name:
-        sheet_name = wb.sheetnames[0]
-        log.info("Target sheet fallback to: %s", sheet_name)
-    else:
-        log.info("Target Excel sheet: %s", sheet_name)
+    if target_sheet not in wb.sheetnames:
+        log.warning("Sheet '%s' not found in %s", target_sheet, excel_path.name)
+        return 0
 
-    ws = wb[sheet_name]
+    ws = wb[target_sheet]
 
+    # Read existing rows to deduplicate and find next N°
     last_row_idx = 3
     last_num = 0
     existing_items = set()
 
-    for r in range(4, ws.max_row + 1):
+    for r in range(4, 1500):
         val_num = ws.cell(row=r, column=1).value
         if val_num is not None:
             last_row_idx = r
@@ -258,20 +272,28 @@ def append_results_to_excel(results: list[dict], excel_path: Path | None = None)
                 last_num = int(val_num)
             except Exception:
                 pass
-            attr_par = str(ws.cell(row=r, column=13).value or "").strip().upper()
-            wilaya = str(ws.cell(row=r, column=9).value or "").strip().upper()
-            t_proj = str(ws.cell(row=r, column=5).value or "").strip().upper()
-            existing_items.add((attr_par, wilaya, t_proj))
+            if notice_type == "appels-doffres":
+                action = str(ws.cell(row=r, column=3).value or "").strip().upper()
+                t_proj = str(ws.cell(row=r, column=5).value or "").strip().upper()
+                wilaya = str(ws.cell(row=r, column=9).value or "").strip().upper()
+                commune = str(ws.cell(row=r, column=10).value or "").strip().upper()
+                existing_items.add((action, t_proj, wilaya, commune))
+            else:
+                attr_par = str(ws.cell(row=r, column=13).value or "").strip().upper()
+                wilaya = str(ws.cell(row=r, column=9).value or "").strip().upper()
+                t_proj = str(ws.cell(row=r, column=5).value or "").strip().upper()
+                existing_items.add((attr_par, wilaya, t_proj))
         else:
+            # Verify if trailing rows exist
             empty = True
-            for check in range(r, min(r + 10, ws.max_row + 1)):
+            for check in range(r, min(r + 10, 1500)):
                 if ws.cell(row=check, column=1).value is not None:
                     empty = False
                     break
             if empty:
                 break
 
-    log.info("Sheet currently has %d rows (last N°: %d)", last_num, last_num)
+    log.info("Sheet '%s' has %d rows (last N°: %d)", target_sheet, last_num, last_num)
     ref_row_idx = last_row_idx if last_row_idx >= 4 else 4
 
     added_count = 0
@@ -280,86 +302,101 @@ def append_results_to_excel(results: list[dict], excel_path: Path | None = None)
     for item in results:
         titre = item.get("titre", "")
         annonceur = item.get("annonceur", "")
-        action, ptype = parse_titre_and_type(titre)
-        attr_par = item.get("entreprise_concernee", "").strip()
+        action = classify_action(titre)
+        ptype = classify_type_projet(titre)
         wilaya = (item.get("wilaya") or "").strip().upper()
-        
-        # Deduplication check
-        dedup_key = (attr_par.upper(), wilaya, ptype.upper())
-        if dedup_key in existing_items and attr_par != "":
-            log.info("  Already exists in Excel: %s (%s)", attr_par[:30], wilaya)
-            continue
-
-        last_num += 1
-        last_row_idx += 1
-        added_count += 1
-        existing_items.add(dedup_key)
-
         commune = parse_commune(titre, annonceur)
-        budget = parse_budget(item.get("montant", ""))
-        delai = parse_delai(item.get("nbr_jours", 0), item.get("description", ""))
+        ann_val = clean_annonceur(annonceur)
+
         dt_parution = parse_date(item.get("date_parution", ""))
         dt_echeance = parse_date(item.get("date_echeance", ""))
 
-        ann_upper = annonceur.upper()
-        if "COMMUNE" in ann_upper:
-            ann_val = "COMMUNE"
-        elif "DJS" in ann_upper:
-            ann_val = "DJS DE LA WILAYA"
-        elif "DEP" in ann_upper:
-            ann_val = "DEP DE LA WILAYA"
-        else:
-            ann_val = annonceur[:40] if annonceur else "/"
+        if notice_type == "appels-doffres":
+            dedup_key = (action.upper(), ptype.upper(), wilaya, commune.upper())
+            if dedup_key in existing_items:
+                log.info("  Already in Excel (AO): %s | %s (%s)", action, ptype, wilaya)
+                continue
 
-        row_values = [
-            last_num,                                # Col 1: N°
-            today_dt,                                # Col 2: DATE
-            action,                                  # Col 3: TITRE D'AVIS D'ATTRIBUTION
-            1,                                       # Col 4: Nombre de projet
-            ptype,                                   # Col 5: TYPE DE PROJET
-            dt_parution,                             # Col 6: DATE DE PARUTION
-            dt_echeance,                             # Col 7: DATE D'ECHEANCE
-            ann_val,                                 # Col 8: ANNONCEUR
-            wilaya if wilaya else "/",               # Col 9: WILAYA
-            commune,                                 # Col 10: COMMUNE
-            dt_parution,                             # Col 11: DATE D'ATTRIBUTION
-            budget,                                  # Col 12: BUDGET
-            attr_par if attr_par else "/",           # Col 13: ATTRIBUTION PAR
-            delai,                                   # Col 14: DELAI
-            "/",                                     # Col 15: WILAYA 2
-        ]
+            last_num += 1
+            last_row_idx += 1
+            added_count += 1
+            existing_items.add(dedup_key)
+
+            row_values = [
+                last_num,                                # Col 1: N°
+                today_dt,                                # Col 2: DATE
+                action,                                  # Col 3: TITRE D'APPEL D'OFFRE
+                1,                                       # Col 4: Nombre de projet
+                ptype,                                   # Col 5: TYPE DE PROJET
+                dt_parution,                             # Col 6: DATE DE PARUTION
+                dt_echeance,                             # Col 7: DATE D'ECHEANCE
+                ann_val,                                 # Col 8: ANNONCEUR
+                wilaya if wilaya else "/",               # Col 9: WILAYA
+                commune,                                 # Col 10: COMMUNE
+                "TRAVAUX PUBLICS",                       # Col 11: CATEGORIE
+            ]
+        else:
+            attr_par = item.get("entreprise_concernee", "").strip()
+            dedup_key = (attr_par.upper(), wilaya, ptype.upper())
+            if dedup_key in existing_items and attr_par != "":
+                log.info("  Already in Excel (AA): %s (%s)", attr_par[:30], wilaya)
+                continue
+
+            last_num += 1
+            last_row_idx += 1
+            added_count += 1
+            existing_items.add(dedup_key)
+
+            budget = parse_budget(item.get("montant", ""))
+            delai = parse_delai(item.get("nbr_jours", 0), item.get("description", ""))
+
+            row_values = [
+                last_num,                                # Col 1: N°
+                today_dt,                                # Col 2: DATE
+                action,                                  # Col 3: TITRE D'AVIS D'ATTRIBUTION
+                1,                                       # Col 4: Nombre de projet
+                ptype,                                   # Col 5: TYPE DE PROJET
+                dt_parution,                             # Col 6: DATE DE PARUTION
+                dt_echeance,                             # Col 7: DATE D'ECHEANCE
+                ann_val,                                 # Col 8: ANNONCEUR
+                wilaya if wilaya else "/",               # Col 9: WILAYA
+                commune,                                 # Col 10: COMMUNE
+                dt_parution,                             # Col 11: DATE D'ATTRIBUTION
+                budget,                                  # Col 12: BUDGET
+                attr_par if attr_par else "/",           # Col 13: ATTRIBUTION PAR
+                delai,                                   # Col 14: DELAI
+                "/",                                     # Col 15: WILAYA 2
+            ]
 
         for col_idx, val in enumerate(row_values, start=1):
             cell = ws.cell(row=last_row_idx, column=col_idx, value=val)
             ref_cell = ws.cell(row=ref_row_idx, column=col_idx)
-            if ref_cell.font:
-                cell.font = copy(ref_cell.font)
-            if ref_cell.border:
-                cell.border = copy(ref_cell.border)
-            if ref_cell.alignment:
-                cell.alignment = copy(ref_cell.alignment)
-            if ref_cell.number_format:
-                cell.number_format = ref_cell.number_format
+            if ref_cell.font: cell.font = copy(ref_cell.font)
+            if ref_cell.border: cell.border = copy(ref_cell.border)
+            if ref_cell.alignment: cell.alignment = copy(ref_cell.alignment)
+            if ref_cell.number_format: cell.number_format = ref_cell.number_format
 
     if added_count > 0:
         ws.cell(row=1, column=4, value="=TODAY()")
         try:
             wb.save(excel_path)
-            log.info("Successfully appended %d new rows to %s (sheet: %s)", added_count, excel_path.name, sheet_name)
+            log.info("Successfully appended %d new rows to %s (sheet: %s)", added_count, excel_path.name, target_sheet)
         except PermissionError:
             alt_path = excel_path.parent / f"{excel_path.stem}_updated.xlsx"
             wb.save(alt_path)
-            log.warning("Original file was locked. Saved %d rows to: %s", added_count, alt_path.name)
+            log.warning("File locked. Saved %d rows to: %s", added_count, alt_path.name)
     else:
-        log.info("No new rows needed for Excel (all already present)")
+        log.info("No new rows needed for Excel '%s' (all up to date)", target_sheet)
 
     return added_count
 
+# ── Google Sheets Sync ───────────────────────────────────────────────────────
 
-def append_results_to_gsheet(results: list[dict], sheet_id: str | None = None) -> int:
+def append_to_gsheet(results: list[dict], notice_type: str, sheet_id: str | None = None) -> int:
     """
-    Append new scraped results into the Google Sheet.
-    Works seamlessly locally (state/service_account.json) and in GitHub Actions (GCP_SERVICE_ACCOUNT_KEY).
+    Append results to the matching worksheet in Google Sheet.
+    - notice_type 'appels-doffres' -> 'APPEL D'OFFRE 2026' (11 columns)
+    - notice_type 'avis-attribution' -> 'AVIS D'ATTRIBUTIONS 2026' (15 columns)
     """
     sheet_id = sheet_id or os.getenv("GOOGLE_SHEET_ID", "1y5-OxNeL_z8hCUNNEVoh1nKZVsyBYrq5EJcgKBEt920")
     if not sheet_id:
@@ -376,13 +413,13 @@ def append_results_to_gsheet(results: list[dict], sheet_id: str | None = None) -
             gc = gspread.service_account_from_dict(creds_dict)
             log.info("Authenticated with Google via GCP_SERVICE_ACCOUNT_KEY env var")
         except Exception as e:
-            log.error("Failed to authenticate with GCP_SERVICE_ACCOUNT_KEY env var: %s", e)
+            log.error("Failed to authenticate with GCP_SERVICE_ACCOUNT_KEY: %s", e)
     elif sa_file.exists():
         try:
             gc = gspread.service_account(filename=str(sa_file))
             log.info("Authenticated with Google via state/service_account.json")
         except Exception as e:
-            log.error("Failed to authenticate with service_account.json file: %s", e)
+            log.error("Failed to authenticate with service_account.json: %s", e)
 
     if not gc:
         log.info("No Google service account credentials found -- skipping Google Sheet sync.")
@@ -393,29 +430,22 @@ def append_results_to_gsheet(results: list[dict], sheet_id: str | None = None) -
         log.info("Opened Google Sheet: %s", sh.title)
     except Exception as e:
         log.warning("Could not access Google Sheet '%s': %s", sheet_id, e)
-        log.warning(">> Please make sure you clicked 'Share' on your Google Sheet and added:")
+        log.warning(">> Please ensure you clicked 'Share' on the Google Sheet and added:")
         log.warning(">> algeriemarches-bot@project-df86d806-9e9d-42be-a7d.iam.gserviceaccount.com as Editor!")
         return 0
 
-    curr_year = datetime.now().year
-    candidates = [
-        f"AVIS D'ATTRIBUTIONS {curr_year}",
-        f"AVIS D'ATTRIBUTION {curr_year}",
-        "AVIS D'ATTRIBUTIONS 2026",
-        "AVIS D'ATTRIBUTIONS",
-        "AVIS D'ATTRIBUTION",
-    ]
+    target_title = "APPEL D'OFFRE 2026" if notice_type == "appels-doffres" else "AVIS D'ATTRIBUTIONS 2026"
     target_ws = None
     for ws in sh.worksheets():
-        if ws.title in candidates:
+        if ws.title.strip().upper() == target_title.upper():
             target_ws = ws
             break
 
     if not target_ws:
-        target_ws = sh.sheet1
-        log.info("Google Sheet target worksheet fallback to: %s", target_ws.title)
-    else:
-        log.info("Target Google Sheet worksheet: %s", target_ws.title)
+        log.warning("Worksheet '%s' not found in Google Sheet", target_title)
+        return 0
+
+    log.info("Target Google Sheet worksheet: %s", target_ws.title)
 
     try:
         all_values = target_ws.get_all_values()
@@ -427,7 +457,7 @@ def append_results_to_gsheet(results: list[dict], sheet_id: str | None = None) -
     existing_items = set()
 
     for idx, row in enumerate(all_values):
-        if idx < 3:
+        if idx < 3: # Skip title & header rows
             continue
         if row and len(row) > 0 and str(row[0]).strip():
             try:
@@ -436,12 +466,19 @@ def append_results_to_gsheet(results: list[dict], sheet_id: str | None = None) -
                     last_num = n
             except Exception:
                 pass
-            attr_par = row[12].strip().upper() if len(row) > 12 else ""
-            wilaya = row[8].strip().upper() if len(row) > 8 else ""
-            t_proj = row[4].strip().upper() if len(row) > 4 else ""
-            existing_items.add((attr_par, wilaya, t_proj))
+            if notice_type == "appels-doffres":
+                action = row[2].strip().upper() if len(row) > 2 else ""
+                t_proj = row[4].strip().upper() if len(row) > 4 else ""
+                wilaya = row[8].strip().upper() if len(row) > 8 else ""
+                commune = row[9].strip().upper() if len(row) > 9 else ""
+                existing_items.add((action, t_proj, wilaya, commune))
+            else:
+                attr_par = row[12].strip().upper() if len(row) > 12 else ""
+                wilaya = row[8].strip().upper() if len(row) > 8 else ""
+                t_proj = row[4].strip().upper() if len(row) > 4 else ""
+                existing_items.add((attr_par, wilaya, t_proj))
 
-    log.info("Google Sheet currently has %d rows (last N°: %d)", len(all_values) - 3 if len(all_values) >= 3 else 0, last_num)
+    log.info("Google Sheet '%s' has %d rows (last N°: %d)", target_ws.title, len(all_values) - 3, last_num)
 
     rows_to_append = []
     today_str = datetime.now().strftime("%Y-%m-%d")
@@ -449,52 +486,69 @@ def append_results_to_gsheet(results: list[dict], sheet_id: str | None = None) -
     for item in results:
         titre = item.get("titre", "")
         annonceur = item.get("annonceur", "")
-        action, ptype = parse_titre_and_type(titre)
-        attr_par = item.get("entreprise_concernee", "").strip()
+        action = classify_action(titre)
+        ptype = classify_type_projet(titre)
         wilaya = (item.get("wilaya") or "").strip().upper()
-
-        dedup_key = (attr_par.upper(), wilaya, ptype.upper())
-        if dedup_key in existing_items and attr_par != "":
-            log.info("  Already in Google Sheet: %s (%s)", attr_par[:30], wilaya)
-            continue
-
-        last_num += 1
-        existing_items.add(dedup_key)
-
         commune = parse_commune(titre, annonceur)
-        budget = parse_budget(item.get("montant", ""))
-        delai = parse_delai(item.get("nbr_jours", 0), item.get("description", ""))
+        ann_val = clean_annonceur(annonceur)
+
         dt_parution = str(item.get("date_parution", ""))[:10] or "/"
         dt_echeance = str(item.get("date_echeance", ""))[:10] or "/"
 
-        ann_upper = annonceur.upper()
-        if "COMMUNE" in ann_upper:
-            ann_val = "COMMUNE"
-        elif "DJS" in ann_upper:
-            ann_val = "DJS DE LA WILAYA"
-        elif "DEP" in ann_upper:
-            ann_val = "DEP DE LA WILAYA"
-        else:
-            ann_val = annonceur[:40] if annonceur else "/"
+        if notice_type == "appels-doffres":
+            dedup_key = (action.upper(), ptype.upper(), wilaya, commune.upper())
+            if dedup_key in existing_items:
+                log.info("  Already in Google Sheet (AO): %s | %s (%s)", action, ptype, wilaya)
+                continue
 
-        row_vals = [
-            last_num,
-            today_str,
-            action,
-            1,
-            ptype,
-            dt_parution,
-            dt_echeance,
-            ann_val,
-            wilaya if wilaya else "/",
-            commune,
-            dt_parution,
-            budget,
-            attr_par if attr_par else "/",
-            delai,
-            "/",
-        ]
-        rows_to_append.append(row_vals)
+            last_num += 1
+            existing_items.add(dedup_key)
+
+            row_data = [
+                last_num,                                # Col 1: N°
+                today_str,                               # Col 2: DATE
+                action,                                  # Col 3: TITRE D'APPEL D'OFFRE
+                1,                                       # Col 4: Nombre de projet
+                ptype,                                   # Col 5: TYPE DE PROJET
+                dt_parution,                             # Col 6: DATE DE PARUTION
+                dt_echeance,                             # Col 7: DATE D'ECHEANCE
+                ann_val,                                 # Col 8: ANNONCEUR
+                wilaya if wilaya else "/",               # Col 9: WILAYA
+                commune,                                 # Col 10: COMMUNE
+                "TRAVAUX PUBLICS",                       # Col 11: CATEGORIE
+            ]
+            rows_to_append.append(row_data)
+        else:
+            attr_par = item.get("entreprise_concernee", "").strip()
+            dedup_key = (attr_par.upper(), wilaya, ptype.upper())
+            if dedup_key in existing_items and attr_par != "":
+                log.info("  Already in Google Sheet (AA): %s (%s)", attr_par[:30], wilaya)
+                continue
+
+            last_num += 1
+            existing_items.add(dedup_key)
+
+            budget = parse_budget(item.get("montant", ""))
+            delai = parse_delai(item.get("nbr_jours", 0), item.get("description", ""))
+
+            row_data = [
+                last_num,                                # Col 1: N°
+                today_str,                               # Col 2: DATE
+                action,                                  # Col 3: TITRE D'AVIS D'ATTRIBUTION
+                1,                                       # Col 4: Nombre de projet
+                ptype,                                   # Col 5: TYPE DE PROJET
+                dt_parution,                             # Col 6: DATE DE PARUTION
+                dt_echeance,                             # Col 7: DATE D'ECHEANCE
+                ann_val,                                 # Col 8: ANNONCEUR
+                wilaya if wilaya else "/",               # Col 9: WILAYA
+                commune,                                 # Col 10: COMMUNE
+                dt_parution,                             # Col 11: DATE D'ATTRIBUTION
+                budget,                                  # Col 12: BUDGET
+                attr_par if attr_par else "/",           # Col 13: ATTRIBUTION PAR
+                delai,                                   # Col 14: DELAI
+                "/",                                     # Col 15: WILAYA 2
+            ]
+            rows_to_append.append(row_data)
 
     if rows_to_append:
         try:
@@ -504,10 +558,11 @@ def append_results_to_gsheet(results: list[dict], sheet_id: str | None = None) -
             log.error("Failed to append rows to Google Sheet: %s", e)
             return 0
     else:
-        log.info("No new rows needed for Google Sheet (all already present)")
+        log.info("No new rows needed for Google Sheet '%s' (all up to date)", target_ws.title)
 
     return len(rows_to_append)
 
+# ── Main Scraper Class ───────────────────────────────────────────────────────
 
 class AlgerieMarchesScraper:
 
@@ -521,7 +576,7 @@ class AlgerieMarchesScraper:
         })
         self._load_cookies()
 
-    # ── JSON cookie persistence ──────────────────────────────────────────────
+    # ── Cookie persistence ───────────────────────────────────────────────────
 
     def _save_cookies(self):
         cookies = []
@@ -565,7 +620,6 @@ class AlgerieMarchesScraper:
         return r.json()["csrfToken"]
 
     def _login(self, csrf: str) -> bool:
-        """Login with JSON body (matching n8n workflow). Don't follow redirects."""
         r = self.s.post(
             LOGIN_URL,
             json={
@@ -610,7 +664,6 @@ class AlgerieMarchesScraper:
             return {"status": r.status_code, "text": r.text[:200]}
 
     def _promote_session(self) -> bool:
-        """Promote NextAuth session token from temporary to normal."""
         try:
             csrf = self._get_csrf()
             r = self.s.post(
@@ -630,15 +683,12 @@ class AlgerieMarchesScraper:
             log.warning("Session promotion failed: %s", e)
             return False
 
-    # ── Session lifecycle ────────────────────────────────────────────────────
-
     def _test_detail_access(self) -> bool:
-        """Test that our session can access a full detail page (not manage-sessions redirect)."""
         if not self._has_auth_cookies():
             return False
         try:
             r = self.s.get(f"{API_BASE}/ads/all",
-                           params={"type": ANNONCE_TYPE, "avis": "true", "page": 1, "limit": 1},
+                           params={"type": "avis-attribution", "avis": "true", "page": 1, "limit": 1},
                            timeout=20)
             items = r.json().get("data", []) if isinstance(r.json(), dict) else []
             if not items:
@@ -652,7 +702,7 @@ class AlgerieMarchesScraper:
                            timeout=30, allow_redirects=True)
             html = r.text
             if "manage-sessions" in html[:5000]:
-                log.info("Detail test: redirected to manage-sessions (session is temp)")
+                log.info("Detail test: redirected to manage-sessions (temporary)")
                 return False
             if len(html) < 50000:
                 log.info("Detail test: page too small (%d bytes)", len(html))
@@ -664,15 +714,9 @@ class AlgerieMarchesScraper:
             return False
 
     def ensure_session(self):
-        """
-        Get a working session.
-        1. Try saved cookies. If temporary, promote to normal.
-        2. If expired/invalid: login once -> disconnect AT MOST ONE competitor -> promote to normal -> done.
-        """
         if not PASSWORD:
             raise RuntimeError("No password. Edit .env and set AM_PASSWORD=...")
 
-        # Try saved cookies
         if self._has_auth_cookies():
             log.info("Have saved auth cookies, testing...")
             try:
@@ -692,13 +736,11 @@ class AlgerieMarchesScraper:
                 return
             log.info("Saved cookies didn't work, need fresh login")
 
-        # Fresh login
         self.s.cookies.clear()
         csrf = self._get_csrf()
         if not self._login(csrf):
             raise RuntimeError("Login failed -- check password in .env")
 
-        # List sessions and inspect
         my_id = self._get_connect_sid_id()
         sessions = self._list_sessions()
         my_type = "?"
@@ -713,32 +755,41 @@ class AlgerieMarchesScraper:
         log.info("Sessions: %d total, my_id=%s type=%s, competitors=%d",
                  len(sessions), my_id[:10] if my_id else "?", my_type, len(competitors))
 
-        # Disconnect AT MOST ONE competitor if we are in temporary state
         if competitors and my_type == "temp":
             target = competitors[0]
             result = self._disconnect_one(target)
-            log.info("Disconnected %s -> %s", target[:10],
+            log.info("Disconnected 1 competitor %s -> %s", target[:10],
                      json.dumps(result, ensure_ascii=False)[:200])
         else:
             log.info("No competitor disconnect needed (my_type=%s, competitors=%d)", my_type, len(competitors))
 
-        # Promote session from temporary to normal
         self._promote_session()
-
-        # Save the promoted session
         self._save_cookies()
 
-    # ── Scraping ─────────────────────────────────────────────────────────────
+    # ── Fetching ─────────────────────────────────────────────────────────────
 
-    def fetch_listings(self, page: int = 1) -> list[dict]:
-        r = self.s.get(f"{API_BASE}/ads/all",
-                       params={"type": ANNONCE_TYPE, "avis": "true", "page": page, "limit": PAGE_SIZE},
-                       timeout=30)
-        data = r.json()
-        return data.get("data", []) if isinstance(data, dict) else []
+    def fetch_listings(self, page: int = 1, notice_type: str = "avis-attribution") -> list[dict]:
+        """Fetch listings from API with automatic fallback to proxy endpoint."""
+        params = {"page": page, "limit": PAGE_SIZE}
+        if notice_type == "appels-doffres":
+            params["type"] = "appels-doffres"
+        else:
+            params["type"] = "avis-attribution"
+            params["avis"] = "true"
+
+        # Try API_BASE first, fallback to API_PROXY
+        for endpoint in [f"{API_BASE}/ads/all", API_PROXY]:
+            try:
+                r = self.s.get(endpoint, params=params, timeout=30)
+                if r.status_code == 200:
+                    data = r.json()
+                    return data.get("data", []) if isinstance(data, dict) else []
+            except Exception as e:
+                log.warning("Fetch listings from %s failed: %s", endpoint, e)
+
+        return []
 
     def fetch_detail(self, slug: str) -> dict:
-        """Fetch detail page and extract ad data from RSC payload + rendered HTML."""
         url = f"{BASE_URL}/annonces/{slug}"
         r = self.s.get(url, headers={"Accept": "text/html"}, timeout=40, allow_redirects=True)
         html = r.text
@@ -748,15 +799,14 @@ class AlgerieMarchesScraper:
 
         result = {"_source": "html", "_html_len": len(html)}
 
-        # 1. Extract ad JSON from RSC payload
+        # Extract ad JSON from RSC payload
         unescaped = html.replace('\\"', '"').replace('\\\\', '\\')
         idx = unescaped.find('"ad":{')
         if idx >= 0:
             start = idx + 5
             depth, end = 0, start
             for i, ch in enumerate(unescaped[start:min(len(unescaped), start + 40000)]):
-                if ch == '{':
-                    depth += 1
+                if ch == '{': depth += 1
                 elif ch == '}':
                     depth -= 1
                     if depth == 0:
@@ -771,28 +821,19 @@ class AlgerieMarchesScraper:
                 result["wilaya"] = (ad.get("wilaya") or {}).get("nom_fr", "")
                 result["type_annonce"] = (ad.get("type_annonce") or {}).get("type_annonce_fr", "")
                 result["sous_type"] = (ad.get("type_appel_offres") or {}).get("types_ao_fr", "")
-                secteurs = ad.get("secteurs") or []
-                result["secteur"] = ", ".join([s.get("secteur_fr", "") for s in secteurs if s.get("secteur_fr")])
 
-                # Paywalled fields present in authenticated RSC payload:
                 annonceurs = ad.get("annonceurs") or {}
                 result["annonceur"] = annonceurs.get("annonceur") or ad.get("adresse_annonceur") or ""
                 result["code_annonce"] = ad.get("code_annonce") or ""
                 result["date_echeance"] = str(ad.get("date_echeance", ""))[:10] if ad.get("date_echeance") else ""
                 result["entreprise_concernee"] = ad.get("entreprise_concerne") or ""
                 result["anep"] = ad.get("anep") or ""
-                result["parution_media"] = (ad.get("parution_media") or {}).get("media", "")
                 result["description"] = ad.get("description") or ""
-
-                if ad.get("image_principale"):
-                    result["image_principale"] = f"{API_BASE}/images/{ad['image_principale']}"
-                if ad.get("image_secondaire"):
-                    result["image_secondaire"] = f"{API_BASE}/images/{ad['image_secondaire']}"
 
             except Exception as e:
                 log.warning("Failed to parse ad JSON for %s: %s", slug[:30], e)
 
-        # 2. Extract rendered HTML fallback / additional fields
+        # Fallbacks from HTML text
         m = re.search(r'Annonceur</span>.*?capitalize[^>]*>([^<]+)<', unescaped, re.DOTALL)
         if m and m.group(1).strip() and not result.get("annonceur"):
             result["annonceur"] = m.group(1).strip()
@@ -809,84 +850,50 @@ class AlgerieMarchesScraper:
         if m and m.group(1).strip() and not result.get("entreprise_concernee"):
             result["entreprise_concernee"] = m.group(1).strip()
 
-        m = re.search(r'Objet du projet\s*:?\s*</[^>]+>\s*([^<]+)', unescaped, re.DOTALL)
-        if m and m.group(1).strip():
-            result["objet"] = m.group(1).strip()
-
-        # Montant extraction (if present in text/description)
+        # Montant extraction
         combined_text = f"{result.get('description', '')} {result.get('entreprise_concernee', '')}"
         m_montant = re.search(r'(\d[\d\s,.]*\s*(?:DA|DZD|dinars?))\b', combined_text, re.IGNORECASE)
         if m_montant:
             result["montant"] = m_montant.group(1).strip()
-        else:
-            result["montant"] = result.get("montant", "")
-
-        # Subscription status
-        if '"code":"RESTRICTED"' in html or '\\"code\\":\\"RESTRICTED\\"' in html:
-            result["_subscription"] = "RESTRICTED"
-        elif '"code":"ACTIVE"' in html or '\\"code\\":\\"ACTIVE\\"' in html or result.get("code_annonce"):
-            result["_subscription"] = "ACTIVE"
-        else:
-            result["_subscription"] = "unknown"
 
         return result
 
-    # ── Main ─────────────────────────────────────────────────────────────────
+    def scrape_notice_type(self, notice_type: str, run_id: str) -> list[dict]:
+        """Scrape either 'appels-doffres' or 'avis-attribution'."""
+        label = "Appels d'Offres" if notice_type == "appels-doffres" else "Avis d'Attribution"
+        log.info("--- Scraping %s (pages 1 to %d) ---", label, MAX_PAGES)
 
-    def run(self):
-        run_id = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        log.info("=" * 60)
-        log.info("Run %s started", run_id)
-
-        self.ensure_session()
-
-        # Fetch listings
         all_annonces = []
         for page in range(1, MAX_PAGES + 1):
-            listings = self.fetch_listings(page)
+            listings = self.fetch_listings(page, notice_type=notice_type)
             if not listings:
-                log.info("Page %d: 0 results -- stopping", page)
+                log.info("  Page %d: 0 listings -- stopping", page)
                 break
-            log.info("Page %d: %d annonces", page, len(listings))
+            log.info("  Page %d: %d listings", page, len(listings))
             all_annonces.extend(listings)
             time.sleep(0.5)
 
-        log.info("Total: %d annonces", len(all_annonces))
+        log.info("Total %s fetched: %d", label, len(all_annonces))
 
+        # Filter by domain keywords (turf/sport/playgrounds)
         filtered = [a for a in all_annonces if KEYWORD_FILTER.search(a.get("titre", ""))]
-        log.info("After filter: %d annonces", len(filtered))
+        log.info("After TAPIDOR keyword filter: %d matching %s", len(filtered), label)
 
-        if not filtered:
-            log.info("No matches -- done")
-            return
-
-        # Fetch details
         results = []
-        errors = []
         for a in filtered:
             ann_id = str(a.get("id_annonce", ""))
             slug = a.get("slug", "")
             titre = a.get("titre", "")
             raw_date = str(a.get("date_parution", ""))[:10]
-            parts = raw_date.split("-")
-            date_fr = f"{parts[2]}-{parts[1]}-{parts[0]}" if len(parts) == 3 else ""
 
-            detail = None
-            for attempt in range(3):
+            detail = {}
+            for attempt in range(2):
                 try:
                     detail = self.fetch_detail(slug) if slug else {}
                     if detail and not detail.get("_error"):
                         break
-                except requests.exceptions.RequestException as e:
-                    wait = 5 * (attempt + 1)
-                    log.warning("  Attempt %d/3 for %s: %s -- retry in %ds",
-                                attempt + 1, ann_id, type(e).__name__, wait)
-                    time.sleep(wait)
-
-            if not detail or detail.get("_error"):
-                detail = detail or {}
-                errors.append(ann_id)
-                log.warning("  SKIP %s", ann_id)
+                except Exception as e:
+                    time.sleep(2)
 
             row = {
                 "run_id": run_id,
@@ -895,80 +902,53 @@ class AlgerieMarchesScraper:
                 "url": f"{BASE_URL}/annonces/{slug}",
                 "titre": titre,
                 "wilaya": detail.get("wilaya") or (a.get("wilaya") or {}).get("nom_fr", ""),
-                "date_parution_fr": date_fr,
+                "date_parution": detail.get("date_parution") or raw_date,
                 "date_echeance": detail.get("date_echeance", ""),
-                "type_annonce": detail.get("type_annonce") or (a.get("type_annonce") or {}).get("type_annonce_fr", ""),
-                "sous_type": detail.get("sous_type") or (a.get("type_appel_offres") or {}).get("types_ao_fr", ""),
-                "secteur": detail.get("secteur") or ((a.get("secteurs") or [{}])[0].get("secteur_fr", "") if a.get("secteurs") else ""),
+                "type_annonce": notice_type,
                 "annonceur": detail.get("annonceur", ""),
                 "code_annonce": detail.get("code_annonce", ""),
                 "entreprise_concernee": detail.get("entreprise_concernee", ""),
                 "montant": detail.get("montant", ""),
-                "anep": detail.get("anep", ""),
-                "parution_media": detail.get("parution_media", ""),
-                "image_principale": detail.get("image_principale", ""),
-                "image_secondaire": detail.get("image_secondaire", ""),
-                "objet": detail.get("objet", ""),
                 "description": detail.get("description", ""),
                 "nbr_jours": detail.get("nbr_jours", 0),
-                "date_parution": detail.get("date_parution") or str(a.get("date_parution", ""))[:10],
-                "subscription": detail.get("_subscription", ""),
                 "scraped_at": datetime.now().isoformat(),
             }
             results.append(row)
-            log.info("  [OK] %s -- %s | Annonceur: %s | Code: %s (sub=%s)",
-                     ann_id, titre[:40], detail.get("annonceur", "N/A")[:30],
-                     detail.get("code_annonce", "N/A"), detail.get("_subscription", "?"))
-            time.sleep(0.8)
+            log.info("  [MATCH] %s | %s | %s | %s", ann_id, titre[:35], row["wilaya"], row["annonceur"][:25])
+            time.sleep(0.5)
 
-        if errors:
-            log.warning("Failed: %s", errors)
+        return results
 
-        # Write CSV
-        csv_path = DATA_DIR / f"annonces_{run_id}.csv"
-        if results:
-            with open(csv_path, "w", newline="", encoding="utf-8-sig") as f:
-                w = csv.DictWriter(f, fieldnames=results[0].keys(), delimiter=";")
-                w.writeheader()
-                w.writerows(results)
-            log.info("Wrote %d rows -> %s", len(results), csv_path)
+    # ── Main Run ─────────────────────────────────────────────────────────────
 
-        master_csv = DATA_DIR / "annonces_master.csv"
-        exists = master_csv.exists()
-        if results:
-            with open(master_csv, "a", newline="", encoding="utf-8-sig") as f:
-                w = csv.DictWriter(f, fieldnames=results[0].keys(), delimiter=";")
-                if not exists:
-                    w.writeheader()
-                w.writerows(results)
-            log.info("Appended to master -> %s", master_csv)
+    def run(self):
+        run_id = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        log.info("=" * 60)
+        log.info("AlgerieMarches Scraper Run %s started", run_id)
+        log.info("Keyword filter: %s", ACTIVE_KEYWORDS)
 
-        # Append directly to the latest .xlsx in Downloads
-        if results:
-            try:
-                added_excel = append_results_to_excel(results)
-                log.info("Excel sync complete: %d rows added", added_excel)
-            except Exception as e:
-                log.warning("Failed to sync to Excel: %s", e)
+        self.ensure_session()
 
-            # Append directly to Google Sheet
-            try:
-                added_gsheet = append_results_to_gsheet(results)
-                log.info("Google Sheet sync complete: %d rows added", added_gsheet)
-            except Exception as e:
-                log.warning("Failed to sync to Google Sheet: %s", e)
+        # 1. Scrape Appels d'Offres -> Target: APPEL D'OFFRE 2026
+        log.info("\n>>> CYCLE 1: APPELS D'OFFRES <<<")
+        ao_results = self.scrape_notice_type("appels-doffres", run_id)
+        if ao_results:
+            added_excel = append_to_excel(ao_results, notice_type="appels-doffres")
+            added_gsheet = append_to_gsheet(ao_results, notice_type="appels-doffres")
+            log.info("AO Sync summary: %d added to Excel, %d added to Google Sheet", added_excel, added_gsheet)
+
+        # 2. Scrape Avis d'Attribution -> Target: AVIS D'ATTRIBUTIONS 2026
+        log.info("\n>>> CYCLE 2: AVIS D'ATTRIBUTION <<<")
+        aa_results = self.scrape_notice_type("avis-attribution", run_id)
+        if aa_results:
+            added_excel = append_to_excel(aa_results, notice_type="avis-attribution")
+            added_gsheet = append_to_gsheet(aa_results, notice_type="avis-attribution")
+            log.info("AA Sync summary: %d added to Excel, %d added to Google Sheet", added_excel, added_gsheet)
 
         self._save_cookies()
-        log.info("Run %s done -- %d results", run_id, len(results))
+        log.info("\nRun %s successfully completed!", run_id)
 
 
 if __name__ == "__main__":
-    if not PASSWORD:
-        print("No password. Edit .env: AM_PASSWORD=your_password")
-        sys.exit(1)
     scraper = AlgerieMarchesScraper()
-    try:
-        scraper.run()
-    except Exception:
-        log.exception("Fatal error")
-        sys.exit(1)
+    scraper.run()
