@@ -746,6 +746,55 @@ def append_to_gsheet(results: list[dict], notice_type: str, sheet_id: str | None
 
     return len(rows_to_append)
 
+# ── Daily Scans Summary Generator ────────────────────────────────────────────
+
+def generate_daily_scans_summary(today_str: str, all_results: list[dict]) -> Path:
+    """Generates a clean visual Markdown gallery in data/scans/YYYY-MM-DD/README.md for GitHub."""
+    day_dir = SCANS_DIR / today_str
+    day_dir.mkdir(parents=True, exist_ok=True)
+    md_file = day_dir / "README.md"
+    lines = [
+        f"# 📰 Newspaper Scans Gallery — {today_str}\n",
+        "> Scans downloaded & OCR-analyzed with Gemini 2.5 Flash for TAPIDOR\n",
+        "| N° | Ad ID | Type | Action & Facility | Wilaya | Commune | Budget | Délai | Scans |",
+        "| :---: | :---: | :---: | :--- | :---: | :---: | :---: | :---: | :---: |"
+    ]
+    for idx, r in enumerate(all_results, start=1):
+        scans = r.get("scans", [])
+        scan_links = []
+        for s_path in scans:
+            fname = Path(s_path).name
+            rel_link = f"{r.get('id')}/{fname}"
+            scan_links.append(f"[{fname}]({rel_link})")
+        scan_col = "<br>".join(scan_links) if scan_links else "Aucun scan"
+        ad_type = "Appel d'Offres" if r.get("type_annonce") == "appels-doffres" else "Avis d'Attribution"
+        lines.append(
+            f"| {idx} | [{r.get('id')}]({r.get('url')}) | {ad_type} | **{r.get('action')}**<br>{r.get('ptype')} | {r.get('wilaya')} | {r.get('commune')} | {r.get('montant') or '/'} | {r.get('delai') or '/'} | {scan_col} |"
+        )
+
+    md_file.write_text("\n".join(lines), encoding="utf-8")
+    log.info("Generated daily scans gallery: %s (%d ads)", md_file.relative_to(SCRIPT_DIR), len(all_results))
+
+    # Also update master data/scans/README.md
+    try:
+        date_dirs = [d for d in SCANS_DIR.iterdir() if d.is_dir() and re.match(r"^\d{4}-\d{2}-\d{2}$", d.name)]
+        date_dirs.sort(key=lambda d: d.name, reverse=True)
+        root_lines = [
+            "# 🗂️ AlgerieMarches Daily Scans Archive\n",
+            "> Central archive of newspaper scans downloaded and OCR-analyzed by Gemini 2.5 Flash for TAPIDOR.\n",
+            "| Date | Matched Ads | Gallery Link |",
+            "| :---: | :---: | :---: |"
+        ]
+        for d in date_dirs:
+            ad_folders = [f for f in d.iterdir() if f.is_dir()]
+            count = len(ad_folders)
+            root_lines.append(f"| **{d.name}** | {count} ad{'s' if count != 1 else ''} | [📂 Browse Scans]({d.name}/) |")
+        (SCANS_DIR / "README.md").write_text("\n".join(root_lines), encoding="utf-8")
+    except Exception as e:
+        log.warning("Could not update root scans README: %s", e)
+
+    return md_file
+
 # ── Main Scraper Class ───────────────────────────────────────────────────────
 
 class AlgerieMarchesScraper:
@@ -1241,6 +1290,12 @@ class AlgerieMarchesScraper:
             added_excel = append_to_excel(aa_results, notice_type="avis-attribution")
             added_gsheet = append_to_gsheet(aa_results, notice_type="avis-attribution")
             log.info("AA Sync summary: %d added to Excel, %d added to Google Sheet", added_excel, added_gsheet)
+
+        # 3. Generate daily scans gallery for GitHub
+        all_matches = (ao_results or []) + (aa_results or [])
+        if all_matches:
+            today_str = datetime.now().strftime("%Y-%m-%d")
+            generate_daily_scans_summary(today_str, all_matches)
 
         self._save_cookies()
         log.info("\nRun %s successfully completed!", run_id)
