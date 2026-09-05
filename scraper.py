@@ -398,7 +398,7 @@ def append_to_gsheet(results: list[dict], notice_type: str, sheet_id: str | None
     - notice_type 'appels-doffres' -> 'APPEL D'OFFRE 2026' (11 columns)
     - notice_type 'avis-attribution' -> 'AVIS D'ATTRIBUTIONS 2026' (15 columns)
     """
-    sheet_id = sheet_id or os.getenv("GOOGLE_SHEET_ID", "1y5-OxNeL_z8hCUNNEVoh1nKZVsyBYrq5EJcgKBEt920")
+    sheet_id = sheet_id or os.getenv("GOOGLE_SHEET_ID", "1y5-OxNeL_zBhCUNNEVoh1nKZVsyBYrq5EJcgKBEt920")
     if not sheet_id:
         log.info("No GOOGLE_SHEET_ID configured -- skipping Google Sheet sync.")
         return 0
