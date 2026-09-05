@@ -9,6 +9,7 @@ Domain:
   Artificial turf, stadiums, sports facilities, playgrounds, school courtyards (TAPIDOR).
 """
 
+import argparse
 import base64
 import csv
 import json
@@ -18,13 +19,11 @@ import re
 import sys
 import time
 import unicodedata
-from copy import copy
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from urllib.parse import unquote
 
 import gspread
-import openpyxl
 import requests
 from dotenv import load_dotenv
 from google.oauth2 import service_account
@@ -396,183 +395,7 @@ class GoogleDriveManager:
             return None
 
 
-def get_latest_downloads_excel() -> Path | None:
-    downloads = Path.home() / "Downloads"
-    if not downloads.exists():
-        return None
-    files = [f for f in downloads.glob("*.xlsx") if not f.name.startswith("~$") and not f.name.endswith("_BACKUP.xlsx")]
-    if not files:
-        return None
-    files.sort(key=lambda f: f.stat().st_mtime, reverse=True)
-    return files[0]
 
-# ── Excel Local Sync ─────────────────────────────────────────────────────────
-
-def append_to_excel(results: list[dict], notice_type: str, excel_path: Path | None = None) -> int:
-    """
-    Append results to the matching sheet in the Downloads Excel file.
-    - notice_type 'appels-doffres' -> 'APPEL D'OFFRE 2026' (11 columns)
-    - notice_type 'avis-attribution' -> 'AVIS D'ATTRIBUTIONS 2026' (15 columns)
-    """
-    if excel_path is None:
-        excel_path = get_latest_downloads_excel()
-
-    if not excel_path or not excel_path.exists():
-        log.warning("No Excel file found in Downloads to update.")
-        return 0
-
-    target_sheet = "APPEL D'OFFRE 2026" if notice_type == "appels-doffres" else "AVIS D'ATTRIBUTIONS 2026"
-    log.info("Checking Downloads Excel file: %s (Target: %s)", excel_path.name, target_sheet)
-
-    try:
-        wb = openpyxl.load_workbook(excel_path)
-    except PermissionError:
-        log.warning("File %s is currently open. Saving to updated copy.", excel_path.name)
-        excel_path = excel_path.parent / f"{excel_path.stem}_updated.xlsx"
-        if excel_path.exists():
-            wb = openpyxl.load_workbook(excel_path)
-        else:
-            return 0
-    except Exception as e:
-        log.error("Failed to open workbook %s: %s", excel_path, e)
-        return 0
-
-    if target_sheet not in wb.sheetnames:
-        log.warning("Sheet '%s' not found in %s", target_sheet, excel_path.name)
-        return 0
-
-    ws = wb[target_sheet]
-
-    # Read existing rows to deduplicate and find next N°
-    last_row_idx = 3
-    last_num = 0
-    existing_items = set()
-
-    for r in range(4, 1500):
-        val_num = ws.cell(row=r, column=1).value
-        if val_num is not None:
-            last_row_idx = r
-            try:
-                last_num = int(val_num)
-            except Exception:
-                pass
-            if notice_type == "appels-doffres":
-                action = str(ws.cell(row=r, column=3).value or "").strip().upper()
-                t_proj = str(ws.cell(row=r, column=5).value or "").strip().upper()
-                wilaya = str(ws.cell(row=r, column=9).value or "").strip().upper()
-                commune = str(ws.cell(row=r, column=10).value or "").strip().upper()
-                existing_items.add((action, t_proj, wilaya, commune))
-            else:
-                attr_par = str(ws.cell(row=r, column=13).value or "").strip().upper()
-                wilaya = str(ws.cell(row=r, column=9).value or "").strip().upper()
-                t_proj = str(ws.cell(row=r, column=5).value or "").strip().upper()
-                existing_items.add((attr_par, wilaya, t_proj))
-        else:
-            # Verify if trailing rows exist
-            empty = True
-            for check in range(r, min(r + 10, 1500)):
-                if ws.cell(row=check, column=1).value is not None:
-                    empty = False
-                    break
-            if empty:
-                break
-
-    log.info("Sheet '%s' has %d rows (last N°: %d)", target_sheet, last_num, last_num)
-    ref_row_idx = last_row_idx if last_row_idx >= 4 else 4
-
-    added_count = 0
-    today_dt = datetime(datetime.now().year, datetime.now().month, datetime.now().day)
-
-    for item in results:
-        titre = item.get("titre", "")
-        annonceur = item.get("annonceur", "")
-        action = item.get("action") or classify_action(titre)
-        ptype = item.get("ptype") or classify_type_projet(titre)
-        wilaya = (item.get("wilaya") or "").strip().upper()
-        commune = item.get("commune") if (item.get("commune") and item.get("commune") != "/") else parse_commune(titre, annonceur)
-        ann_val = clean_annonceur(annonceur)
-
-        dt_parution = parse_date(item.get("date_parution", ""))
-        dt_echeance = parse_date(item.get("date_echeance", ""))
-
-        if notice_type == "appels-doffres":
-            dedup_key = (action.upper(), ptype.upper(), wilaya, commune.upper())
-            if dedup_key in existing_items:
-                log.info("  Already in Excel (AO): %s | %s (%s)", action, ptype, wilaya)
-                continue
-
-            last_num += 1
-            last_row_idx += 1
-            added_count += 1
-            existing_items.add(dedup_key)
-
-            row_values = [
-                last_num,                                # Col 1: N°
-                today_dt,                                # Col 2: DATE
-                action,                                  # Col 3: TITRE D'APPEL D'OFFRE
-                1,                                       # Col 4: Nombre de projet
-                ptype,                                   # Col 5: TYPE DE PROJET
-                dt_parution,                             # Col 6: DATE DE PARUTION
-                dt_echeance,                             # Col 7: DATE D'ECHEANCE
-                ann_val,                                 # Col 8: ANNONCEUR
-                wilaya if wilaya else "/",               # Col 9: WILAYA
-                commune,                                 # Col 10: COMMUNE
-                "TRAVAUX PUBLICS",                       # Col 11: CATEGORIE
-            ]
-        else:
-            attr_par = item.get("entreprise_concernee", "").strip()
-            dedup_key = (attr_par.upper(), wilaya, ptype.upper())
-            if dedup_key in existing_items and attr_par != "":
-                log.info("  Already in Excel (AA): %s (%s)", attr_par[:30], wilaya)
-                continue
-
-            last_num += 1
-            last_row_idx += 1
-            added_count += 1
-            existing_items.add(dedup_key)
-
-            budget = parse_budget(item.get("montant", "")) if item.get("montant") else "/"
-            delai = item.get("delai") or parse_delai(item.get("nbr_jours", 0), item.get("description", ""))
-
-            row_values = [
-                last_num,                                # Col 1: N°
-                today_dt,                                # Col 2: DATE
-                action,                                  # Col 3: TITRE D'AVIS D'ATTRIBUTION
-                1,                                       # Col 4: Nombre de projet
-                ptype,                                   # Col 5: TYPE DE PROJET
-                dt_parution,                             # Col 6: DATE DE PARUTION
-                dt_echeance,                             # Col 7: DATE D'ECHEANCE
-                ann_val,                                 # Col 8: ANNONCEUR
-                wilaya if wilaya else "/",               # Col 9: WILAYA
-                commune,                                 # Col 10: COMMUNE
-                dt_parution,                             # Col 11: DATE D'ATTRIBUTION
-                budget,                                  # Col 12: BUDGET
-                attr_par if attr_par else "/",           # Col 13: ATTRIBUTION PAR
-                delai,                                   # Col 14: DELAI
-                "/",                                     # Col 15: WILAYA 2
-            ]
-
-        for col_idx, val in enumerate(row_values, start=1):
-            cell = ws.cell(row=last_row_idx, column=col_idx, value=val)
-            ref_cell = ws.cell(row=ref_row_idx, column=col_idx)
-            if ref_cell.font: cell.font = copy(ref_cell.font)
-            if ref_cell.border: cell.border = copy(ref_cell.border)
-            if ref_cell.alignment: cell.alignment = copy(ref_cell.alignment)
-            if ref_cell.number_format: cell.number_format = ref_cell.number_format
-
-    if added_count > 0:
-        ws.cell(row=1, column=4, value="=TODAY()")
-        try:
-            wb.save(excel_path)
-            log.info("Successfully appended %d new rows to %s (sheet: %s)", added_count, excel_path.name, target_sheet)
-        except PermissionError:
-            alt_path = excel_path.parent / f"{excel_path.stem}_updated.xlsx"
-            wb.save(alt_path)
-            log.warning("File locked. Saved %d rows to: %s", added_count, alt_path.name)
-    else:
-        log.info("No new rows needed for Excel '%s' (all up to date)", target_sheet)
-
-    return added_count
 
 # ── Google Sheets Sync ───────────────────────────────────────────────────────
 
@@ -660,7 +483,12 @@ def append_to_gsheet(results: list[dict], notice_type: str, sheet_id: str | None
                 attr_par = row[12].strip().upper() if len(row) > 12 else ""
                 wilaya = row[8].strip().upper() if len(row) > 8 else ""
                 t_proj = row[4].strip().upper() if len(row) > 4 else ""
-                existing_items.add((attr_par, wilaya, t_proj))
+                action = row[2].strip().upper() if len(row) > 2 else ""
+                commune = row[9].strip().upper() if len(row) > 9 else ""
+                if attr_par:
+                    existing_items.add((attr_par, wilaya, t_proj))
+                if action and t_proj and wilaya:
+                    existing_items.add(("ALT", action, t_proj, wilaya, commune))
 
     log.info("Google Sheet '%s' has %d rows (last N°: %d)", target_ws.title, len(all_values) - 3, last_num)
 
@@ -705,12 +533,15 @@ def append_to_gsheet(results: list[dict], notice_type: str, sheet_id: str | None
         else:
             attr_par = item.get("entreprise_concernee", "").strip()
             dedup_key = (attr_par.upper(), wilaya, ptype.upper())
-            if dedup_key in existing_items and attr_par != "":
+            dedup_key_alt = ("ALT", action.upper(), ptype.upper(), wilaya, commune.upper())
+            if (attr_par != "" and dedup_key in existing_items) or (dedup_key_alt in existing_items):
                 log.info("  Already in Google Sheet (AA): %s (%s)", attr_par[:30], wilaya)
                 continue
 
             last_num += 1
-            existing_items.add(dedup_key)
+            if attr_par:
+                existing_items.add(dedup_key)
+            existing_items.add(dedup_key_alt)
 
             budget = parse_budget(item.get("montant", "")) if item.get("montant") else "/"
             delai = item.get("delai") or parse_delai(item.get("nbr_jours", 0), item.get("description", ""))
@@ -748,32 +579,41 @@ def append_to_gsheet(results: list[dict], notice_type: str, sheet_id: str | None
 
 # ── Daily Scans Summary Generator ────────────────────────────────────────────
 
-def generate_daily_scans_summary(today_str: str, all_results: list[dict]) -> Path:
-    """Generates a clean visual Markdown gallery in data/scans/YYYY-MM-DD/README.md for GitHub."""
-    day_dir = SCANS_DIR / today_str
-    day_dir.mkdir(parents=True, exist_ok=True)
-    md_file = day_dir / "README.md"
-    lines = [
-        f"# 📰 Newspaper Scans Gallery — {today_str}\n",
-        "> Scans downloaded & OCR-analyzed with Gemini 2.5 Flash for TAPIDOR\n",
-        "| N° | Ad ID | Type | Action & Facility | Wilaya | Commune | Budget | Délai | Scans |",
-        "| :---: | :---: | :---: | :--- | :---: | :---: | :---: | :---: | :---: |"
-    ]
-    for idx, r in enumerate(all_results, start=1):
-        scans = r.get("scans", [])
-        scan_links = []
-        for s_path in scans:
-            fname = Path(s_path).name
-            rel_link = f"{r.get('id')}/{fname}"
-            scan_links.append(f"[{fname}]({rel_link})")
-        scan_col = "<br>".join(scan_links) if scan_links else "Aucun scan"
-        ad_type = "Appel d'Offres" if r.get("type_annonce") == "appels-doffres" else "Avis d'Attribution"
-        lines.append(
-            f"| {idx} | [{r.get('id')}]({r.get('url')}) | {ad_type} | **{r.get('action')}**<br>{r.get('ptype')} | {r.get('wilaya')} | {r.get('commune')} | {r.get('montant') or '/'} | {r.get('delai') or '/'} | {scan_col} |"
-        )
+def generate_daily_scans_summary(all_results: list[dict]) -> list[Path]:
+    """Generates clean visual Markdown galleries in data/scans/YYYY-MM-DD/README.md for GitHub."""
+    by_date: dict[str, list[dict]] = {}
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    for r in all_results:
+        d = str(r.get("date_parution") or today_str)[:10]
+        by_date.setdefault(d, []).append(r)
 
-    md_file.write_text("\n".join(lines), encoding="utf-8")
-    log.info("Generated daily scans gallery: %s (%d ads)", md_file.relative_to(SCRIPT_DIR), len(all_results))
+    generated = []
+    for d_str, matches in by_date.items():
+        day_dir = SCANS_DIR / d_str
+        day_dir.mkdir(parents=True, exist_ok=True)
+        md_file = day_dir / "README.md"
+        lines = [
+            f"# 📰 Newspaper Scans Gallery — {d_str}\n",
+            "> Scans downloaded & OCR-analyzed with Gemini 2.5 Flash for TAPIDOR\n",
+            "| N° | Ad ID | Type | Action & Facility | Wilaya | Commune | Budget | Délai | Scans |",
+            "| :---: | :---: | :---: | :--- | :---: | :---: | :---: | :---: | :---: |"
+        ]
+        for idx, r in enumerate(matches, start=1):
+            scans = r.get("scans", [])
+            scan_links = []
+            for s_path in scans:
+                fname = Path(s_path).name
+                rel_link = f"{r.get('id')}/{fname}"
+                scan_links.append(f"[{fname}]({rel_link})")
+            scan_col = "<br>".join(scan_links) if scan_links else "Aucun scan"
+            ad_type = "Appel d'Offres" if r.get("type_annonce") == "appels-doffres" else "Avis d'Attribution"
+            lines.append(
+                f"| {idx} | [{r.get('id')}]({r.get('url')}) | {ad_type} | **{r.get('action')}**<br>{r.get('ptype')} | {r.get('wilaya')} | {r.get('commune')} | {r.get('montant') or '/'} | {r.get('delai') or '/'} | {scan_col} |"
+            )
+
+        md_file.write_text("\n".join(lines), encoding="utf-8")
+        log.info("Generated daily scans gallery: %s (%d ads)", md_file.relative_to(SCRIPT_DIR), len(matches))
+        generated.append(md_file)
 
     # Also update master data/scans/README.md
     try:
@@ -793,7 +633,7 @@ def generate_daily_scans_summary(today_str: str, all_results: list[dict]) -> Pat
     except Exception as e:
         log.warning("Could not update root scans README: %s", e)
 
-    return md_file
+    return generated
 
 # ── Main Scraper Class ───────────────────────────────────────────────────────
 
@@ -1124,22 +964,36 @@ class AlgerieMarchesScraper:
 
         return urls
 
-    def scrape_notice_type(self, notice_type: str, run_id: str) -> list[dict]:
+    def scrape_notice_type(self, notice_type: str, run_id: str, since_date: str = "") -> list[dict]:
         """Scrape either 'appels-doffres' or 'avis-attribution' with scan downloads and AI extraction."""
         label = "Appels d'Offres" if notice_type == "appels-doffres" else "Avis d'Attribution"
-        log.info("--- Scraping %s (pages 1 to %d) ---", label, MAX_PAGES)
+        log.info("--- Scraping %s (since date: %s) ---", label, since_date or "any")
 
         all_annonces = []
-        for page in range(1, MAX_PAGES + 1):
+        max_pages_limit = 50 if since_date else MAX_PAGES
+
+        for page in range(1, max_pages_limit + 1):
             listings = self.fetch_listings(page, notice_type=notice_type)
             if not listings:
                 log.info("  Page %d: 0 listings -- stopping", page)
                 break
-            log.info("  Page %d: %d listings", page, len(listings))
-            all_annonces.extend(listings)
-            time.sleep(0.5)
 
-        log.info("Total %s fetched: %d", label, len(all_annonces))
+            page_dates = [str(a.get("date_parution", ""))[:10] for a in listings if a.get("date_parution")]
+            log.info("  Page %d: %d listings (dates: %s to %s)",
+                     page, len(listings), max(page_dates) if page_dates else "?", min(page_dates) if page_dates else "?")
+
+            if since_date:
+                valid_on_page = [a for a in listings if str(a.get("date_parution", ""))[:10] >= since_date]
+                all_annonces.extend(valid_on_page)
+                if any(str(a.get("date_parution", ""))[:10] < since_date for a in listings):
+                    log.info("  Reached ads older than cutoff %s at page %d -- stopping pagination", since_date, page)
+                    break
+            else:
+                all_annonces.extend(listings)
+
+            time.sleep(0.4)
+
+        log.info("Total %s fetched (>= %s): %d", label, since_date or "all", len(all_annonces))
 
         # Filter by domain keywords (turf/sport/playgrounds)
         filtered = [a for a in all_annonces if KEYWORD_FILTER.search(a.get("titre", ""))]
@@ -1152,7 +1006,7 @@ class AlgerieMarchesScraper:
             ann_id = str(a.get("id_annonce", ""))
             slug = a.get("slug", "")
             titre = a.get("titre", "")
-            raw_date = str(a.get("date_parution", ""))[:10]
+            raw_date = str(a.get("date_parution", ""))[:10] or today_str
 
             detail = {}
             for attempt in range(2):
@@ -1165,7 +1019,8 @@ class AlgerieMarchesScraper:
 
             # ── 1. Download Attached Scans & Upload to Google Drive ──
             scan_urls = self.get_scan_urls(a, detail.get("_html", ""))
-            ad_scan_dir = SCANS_DIR / today_str / ann_id
+            target_date = detail.get("date_parution") or raw_date
+            ad_scan_dir = SCANS_DIR / target_date / ann_id
             ad_scan_dir.mkdir(parents=True, exist_ok=True)
             downloaded_scans = []
 
@@ -1185,7 +1040,7 @@ class AlgerieMarchesScraper:
                     downloaded_scans.append(local_fp)
                     # Attempt Drive upload
                     if self.drive_mgr:
-                        self.drive_mgr.upload_scan(local_fp, today_str)
+                        self.drive_mgr.upload_scan(local_fp, target_date)
 
             # ── 2. AI Scan Vision (Gemini 2.5 Flash) ─────────────────
             ai_data = {}
@@ -1267,40 +1122,49 @@ class AlgerieMarchesScraper:
 
     # ── Main Run ─────────────────────────────────────────────────────────────
 
-    def run(self):
+    def run(self, since_date: str | None = None):
         run_id = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        if not since_date:
+            since_date = os.getenv("AM_SINCE_DATE", "").strip()
+        if not since_date:
+            # Default to yesterday for daily automated runs
+            since_date = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+
         log.info("=" * 60)
         log.info("AlgerieMarches Scraper Run %s started", run_id)
+        log.info("Cutoff date (since): %s", since_date)
         log.info("Keyword filter: %s", ACTIVE_KEYWORDS)
 
         self.ensure_session()
 
         # 1. Scrape Appels d'Offres -> Target: APPEL D'OFFRE 2026
         log.info("\n>>> CYCLE 1: APPELS D'OFFRES <<<")
-        ao_results = self.scrape_notice_type("appels-doffres", run_id)
+        ao_results = self.scrape_notice_type("appels-doffres", run_id, since_date=since_date)
         if ao_results:
-            added_excel = append_to_excel(ao_results, notice_type="appels-doffres")
             added_gsheet = append_to_gsheet(ao_results, notice_type="appels-doffres")
-            log.info("AO Sync summary: %d added to Excel, %d added to Google Sheet", added_excel, added_gsheet)
+            log.info("AO Sync summary: %d added to Google Sheet", added_gsheet)
 
         # 2. Scrape Avis d'Attribution -> Target: AVIS D'ATTRIBUTIONS 2026
         log.info("\n>>> CYCLE 2: AVIS D'ATTRIBUTION <<<")
-        aa_results = self.scrape_notice_type("avis-attribution", run_id)
+        aa_results = self.scrape_notice_type("avis-attribution", run_id, since_date=since_date)
         if aa_results:
-            added_excel = append_to_excel(aa_results, notice_type="avis-attribution")
             added_gsheet = append_to_gsheet(aa_results, notice_type="avis-attribution")
-            log.info("AA Sync summary: %d added to Excel, %d added to Google Sheet", added_excel, added_gsheet)
+            log.info("AA Sync summary: %d added to Google Sheet", added_gsheet)
 
         # 3. Generate daily scans gallery for GitHub
         all_matches = (ao_results or []) + (aa_results or [])
         if all_matches:
-            today_str = datetime.now().strftime("%Y-%m-%d")
-            generate_daily_scans_summary(today_str, all_matches)
+            generate_daily_scans_summary(all_matches)
 
         self._save_cookies()
         log.info("\nRun %s successfully completed!", run_id)
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="AlgerieMarches Scraper & Google Sheets Sync")
+    parser.add_argument("--since", dest="since_date", default=None,
+                        help="Cutoff publication date YYYY-MM-DD (defaults to yesterday)")
+    args = parser.parse_args()
+
     scraper = AlgerieMarchesScraper()
-    scraper.run()
+    scraper.run(since_date=args.since_date)

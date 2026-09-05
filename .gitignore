@@ -6,3 +6,4 @@ state/service_account.json
 state/*.html
 state/*.txt
 state/sample*
+*.log
