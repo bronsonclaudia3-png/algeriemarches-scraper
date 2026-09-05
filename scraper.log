@@ -1,0 +1,264 @@
+2026-09-05 00:26:36,429  INFO      ════════════════════════════════════════════════════════════
+2026-09-05 00:26:36,445  INFO      Run 2026-09-05_00-26-36 started
+2026-09-05 00:26:37,065  INFO      Session is alive (listing API returned data)
+2026-09-05 00:26:37,065  INFO      ✓ Saved session still valid — skipping login
+2026-09-05 00:26:37,390  INFO      Page 1: 20 annonces
+2026-09-05 00:26:38,164  INFO      Page 2: 20 annonces
+2026-09-05 00:26:38,960  INFO      Page 3: 20 annonces
+2026-09-05 00:26:39,461  INFO      Total raw annonces: 60
+2026-09-05 00:26:39,461  INFO      After keyword filter: 6 annonces
+2026-09-05 00:26:39,953  INFO        ✓ 68322 — Fourniture des ingrédients (ferments lactiques, penicillium  (via html)
+2026-09-05 00:26:41,088  INFO        ✓ 68241 — Fourniture, pose et mise en service d'un refroidisseur de li (via html)
+2026-09-05 00:26:42,121  INFO        ✓ 68301 — Fourniture de solutions de sécurité informatique et services (via html)
+2026-09-05 00:26:43,347  INFO        ✓ 68183 — Approvisionnement en fourniture de bureau, consommables info (via html)
+2026-09-05 00:26:44,428  INFO        ✓ 68377 — Fourniture des équipements bureautique et informatiques au p (via html)
+2026-09-05 00:26:45,466  INFO        ✓ 68002 — Fourniture des produits radio pharmaceutiques (PRP) (via html)
+2026-09-05 00:26:46,267  INFO      Wrote 6 rows → C:\Users\said\algeriemarches-scraper\data\annonces_2026-09-05_00-26-36.csv
+2026-09-05 00:26:46,268  INFO      Appended to master → C:\Users\said\algeriemarches-scraper\data\annonces_master.csv
+2026-09-05 00:26:46,269  INFO      Run 2026-09-05_00-26-36 complete — 6 results
+2026-09-05 00:31:10,913  INFO      Loaded cookies from disk (0 cookies)
+2026-09-05 00:31:10,913  INFO      ════════════════════════════════════════════════════════════
+2026-09-05 00:31:10,914  INFO      Run 2026-09-05_00-31-10 started
+2026-09-05 00:31:11,726  INFO      Session is alive (listing API returned data)
+2026-09-05 00:31:11,726  INFO      ✓ Saved session still valid — skipping login
+2026-09-05 00:31:12,159  INFO      Page 1: 20 annonces
+2026-09-05 00:31:13,067  INFO      Page 2: 20 annonces
+2026-09-05 00:31:13,917  INFO      Page 3: 20 annonces
+2026-09-05 00:31:14,418  INFO      Total raw annonces: 60
+2026-09-05 00:31:14,419  INFO      After keyword filter: 6 annonces
+2026-09-05 00:31:14,854  INFO        ✓ 68322 — Fourniture des ingrédients (ferments lactiques, penicillium  (via html)
+2026-09-05 00:31:16,018  INFO        ✓ 68241 — Fourniture, pose et mise en service d'un refroidisseur de li (via html)
+2026-09-05 00:32:36,247  ERROR     Fatal error
+Traceback (most recent call last):
+  File "C:\Users\said\algeriemarches-scraper\.venv\Lib\site-packages\urllib3\connection.py", line 204, in _new_conn
+    sock = connection.create_connection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\said\algeriemarches-scraper\.venv\Lib\site-packages\urllib3\util\connection.py", line 85, in create_connection
+    raise err
+  File "C:\Users\said\algeriemarches-scraper\.venv\Lib\site-packages\urllib3\util\connection.py", line 73, in create_connection
+    sock.connect(sa)
+TimeoutError: [WinError 10060] A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\said\algeriemarches-scraper\.venv\Lib\site-packages\urllib3\connectionpool.py", line 788, in urlopen
+    response = self._make_request(
+               ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\said\algeriemarches-scraper\.venv\Lib\site-packages\urllib3\connectionpool.py", line 488, in _make_request
+    raise new_e
+  File "C:\Users\said\algeriemarches-scraper\.venv\Lib\site-packages\urllib3\connectionpool.py", line 464, in _make_request
+    self._validate_conn(conn)
+  File "C:\Users\said\algeriemarches-scraper\.venv\Lib\site-packages\urllib3\connectionpool.py", line 1106, in _validate_conn
+    conn.connect()
+  File "C:\Users\said\algeriemarches-scraper\.venv\Lib\site-packages\urllib3\connection.py", line 759, in connect
+    self.sock = sock = self._new_conn()
+                       ^^^^^^^^^^^^^^^^
+  File "C:\Users\said\algeriemarches-scraper\.venv\Lib\site-packages\urllib3\connection.py", line 213, in _new_conn
+    raise ConnectTimeoutError(
+urllib3.exceptions.ConnectTimeoutError: (<HTTPSConnection(host='algeriemarches.com', port=443) at 0x2d84bfa4e60>, 'Connection to algeriemarches.com timed out. (connect timeout=40)')
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\said\algeriemarches-scraper\.venv\Lib\site-packages\requests\adapters.py", line 696, in send
+    resp = conn.urlopen(
+           ^^^^^^^^^^^^^
+  File "C:\Users\said\algeriemarches-scraper\.venv\Lib\site-packages\urllib3\connectionpool.py", line 842, in urlopen
+    retries = retries.increment(
+              ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\said\algeriemarches-scraper\.venv\Lib\site-packages\urllib3\util\retry.py", line 543, in increment
+    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+urllib3.exceptions.MaxRetryError: HTTPSConnectionPool(host='algeriemarches.com', port=443): Max retries exceeded with url: /annonces/755568-fourniture-de-solutions-de-securite-informatique-et-services-connexes (Caused by ConnectTimeoutError(<HTTPSConnection(host='algeriemarches.com', port=443) at 0x2d84bfa4e60>, 'Connection to algeriemarches.com timed out. (connect timeout=40)'))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "c:\Users\said\algeriemarches-scraper\scraper.py", line 526, in <module>
+    scraper.run()
+  File "c:\Users\said\algeriemarches-scraper\scraper.py", line 461, in run
+    detail = self.fetch_detail_html(slug)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\said\algeriemarches-scraper\scraper.py", line 327, in fetch_detail_html
+    r = self.s.get(
+        ^^^^^^^^^^^
+  File "C:\Users\said\algeriemarches-scraper\.venv\Lib\site-packages\requests\sessions.py", line 671, in get
+    return self.request("GET", url, params=params, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\said\algeriemarches-scraper\.venv\Lib\site-packages\requests\sessions.py", line 651, in request
+    resp = self.send(prep, **send_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\said\algeriemarches-scraper\.venv\Lib\site-packages\requests\sessions.py", line 784, in send
+    r = adapter.send(request, **kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\said\algeriemarches-scraper\.venv\Lib\site-packages\requests\adapters.py", line 717, in send
+    raise ConnectTimeout(e, request=request)
+requests.exceptions.ConnectTimeout: HTTPSConnectionPool(host='algeriemarches.com', port=443): Max retries exceeded with url: /annonces/755568-fourniture-de-solutions-de-securite-informatique-et-services-connexes (Caused by ConnectTimeoutError(<HTTPSConnection(host='algeriemarches.com', port=443) at 0x2d84bfa4e60>, 'Connection to algeriemarches.com timed out. (connect timeout=40)'))
+2026-09-05 10:16:36,808  INFO      Loaded cookies from disk (0 cookies)
+2026-09-05 10:16:36,809  INFO      ════════════════════════════════════════════════════════════
+2026-09-05 10:16:36,809  INFO      Run 2026-09-05_10-16-36 started
+2026-09-05 10:16:37,447  INFO      Session is alive (listing API returned data)
+2026-09-05 10:16:37,447  INFO      ✓ Saved session still valid — skipping login
+2026-09-05 10:16:37,989  INFO      Page 1: 20 annonces
+2026-09-05 10:16:39,350  INFO      Page 2: 20 annonces
+2026-09-05 10:16:40,590  INFO      Page 3: 20 annonces
+2026-09-05 10:16:41,091  INFO      Total raw annonces: 60
+2026-09-05 10:16:41,092  INFO      After keyword filter: 2 annonces
+2026-09-05 10:16:41,716  INFO        [OK] 68377 -- Fourniture des équipements bureautique et informatiques au p (via html)
+2026-09-05 10:16:42,924  INFO        [OK] 68183 -- Approvisionnement en fourniture de bureau, consommables info (via html)
+2026-09-05 10:16:43,729  INFO      Wrote 2 rows → C:\Users\said\algeriemarches-scraper\data\annonces_2026-09-05_10-16-36.csv
+2026-09-05 10:16:43,730  INFO      Appended to master → C:\Users\said\algeriemarches-scraper\data\annonces_master.csv
+2026-09-05 10:16:43,730  INFO      Run 2026-09-05_10-16-36 complete — 2 results
+2026-09-05 10:24:36,783  INFO      No saved cookies found
+2026-09-05 10:24:36,783  INFO      ============================================================
+2026-09-05 10:24:36,784  INFO      Run 2026-09-05_10-24-36 started
+2026-09-05 10:24:36,784  INFO      Starting drain-and-login cycle...
+2026-09-05 10:24:36,784  INFO      --- Drain round 1 ---
+2026-09-05 10:24:37,915  INFO      Login: final_url=https://algeriemarches.com/login?error=CredentialsSignin&code=invalid_credentials status=200 has_auth=False cookies=2
+2026-09-05 10:24:37,916  ERROR     Fatal error
+Traceback (most recent call last):
+  File "c:\Users\said\algeriemarches-scraper\scraper.py", line 620, in <module>
+    scraper.run()
+  File "c:\Users\said\algeriemarches-scraper\scraper.py", line 506, in run
+    self.ensure_session()
+  File "c:\Users\said\algeriemarches-scraper\scraper.py", line 373, in ensure_session
+    self._drain_and_login()
+  File "c:\Users\said\algeriemarches-scraper\scraper.py", line 293, in _drain_and_login
+    raise RuntimeError(f"Login failed in drain round {round_num}")
+RuntimeError: Login failed in drain round 1
+2026-09-05 10:28:47,573  INFO      No saved cookies
+2026-09-05 10:28:47,574  INFO      ============================================================
+2026-09-05 10:28:47,574  INFO      Run 2026-09-05_10-28-47 started
+2026-09-05 10:28:48,368  INFO      Login: status=302 location=https://algeriemarches.com has_auth=True
+2026-09-05 10:28:48,450  INFO      Sessions: 5 total, my_id=5iszwD5_Gg type=temp, competitors=4
+2026-09-05 10:28:48,625  INFO      Disconnected jsrmBUT5wO -> {"success": true, "status": 200, "message": "Session disconnected and account activated"}
+2026-09-05 10:28:48,627  INFO      Saved 4 cookies to disk
+2026-09-05 10:28:54,399  INFO      Page 1: 20 annonces
+2026-09-05 10:28:55,385  INFO      Page 2: 20 annonces
+2026-09-05 10:28:56,274  INFO      Page 3: 20 annonces
+2026-09-05 10:28:56,776  INFO      Total: 60 annonces
+2026-09-05 10:28:56,776  INFO      After filter: 2 annonces
+2026-09-05 10:28:56,867  INFO        [OK] 68866 -- Alimentation scolaire  (sub=unknown)
+2026-09-05 10:28:57,727  INFO        [OK] 68377 -- Fourniture des équipements bureautique et informat (sub=unknown)
+2026-09-05 10:28:58,530  INFO      Wrote 2 rows -> C:\Users\said\algeriemarches-scraper\data\annonces_2026-09-05_10-28-47.csv
+2026-09-05 10:28:58,532  INFO      Appended to master -> C:\Users\said\algeriemarches-scraper\data\annonces_master.csv
+2026-09-05 10:28:58,532  INFO      Saved 4 cookies to disk
+2026-09-05 10:28:58,532  INFO      Run 2026-09-05_10-28-47 done -- 2 results
+2026-09-05 10:41:19,375  INFO      Loaded 4 cookies from disk
+2026-09-05 10:41:19,375  INFO      ============================================================
+2026-09-05 10:41:19,375  INFO      Run 2026-09-05_10-41-19 started
+2026-09-05 10:41:19,375  INFO      Have saved auth cookies, testing...
+2026-09-05 10:41:20,634  INFO      Detail test: OK (137625 bytes)
+2026-09-05 10:41:20,635  INFO      Saved session works!
+2026-09-05 10:41:20,636  INFO      Saved 4 cookies to disk
+2026-09-05 10:41:21,057  INFO      Page 1: 20 annonces
+2026-09-05 10:41:21,968  INFO      Page 2: 20 annonces
+2026-09-05 10:41:22,939  INFO      Page 3: 20 annonces
+2026-09-05 10:41:23,440  INFO      Total: 60 annonces
+2026-09-05 10:41:23,440  INFO      After filter: 2 annonces
+2026-09-05 10:41:23,778  INFO        [OK] 68866 -- Alimentation scolaire  | Annonceur: Commune d'Ouled Khalouf | Code: 07/2026 (sub=ACTIVE)
+2026-09-05 10:41:24,965  INFO        [OK] 68377 -- Fourniture des équipements bureautique e | Annonceur: Direction des impôts de la wil | Code: 01/2026 (sub=ACTIVE)
+2026-09-05 10:41:25,771  INFO      Wrote 2 rows -> C:\Users\said\algeriemarches-scraper\data\annonces_2026-09-05_10-41-19.csv
+2026-09-05 10:41:25,771  INFO      Appended to master -> C:\Users\said\algeriemarches-scraper\data\annonces_master.csv
+2026-09-05 10:41:25,772  INFO      Saved 4 cookies to disk
+2026-09-05 10:41:25,772  INFO      Run 2026-09-05_10-41-19 done -- 2 results
+2026-09-05 10:41:40,734  INFO      Loaded 4 cookies from disk
+2026-09-05 10:41:40,734  INFO      ============================================================
+2026-09-05 10:41:40,735  INFO      Run 2026-09-05_10-41-40 started
+2026-09-05 10:41:40,735  INFO      Have saved auth cookies, testing...
+2026-09-05 10:41:42,057  INFO      Detail test: OK (137625 bytes)
+2026-09-05 10:41:42,058  INFO      Saved session works!
+2026-09-05 10:41:42,060  INFO      Saved 4 cookies to disk
+2026-09-05 10:41:42,727  INFO      Page 1: 20 annonces
+2026-09-05 10:41:43,690  INFO      Page 2: 20 annonces
+2026-09-05 10:41:44,571  INFO      Page 3: 20 annonces
+2026-09-05 10:41:45,072  INFO      Total: 60 annonces
+2026-09-05 10:41:45,073  INFO      After filter: 2 annonces
+2026-09-05 10:41:45,382  INFO        [OK] 68866 -- Alimentation scolaire  | Annonceur: Commune d'Ouled Khalouf | Code: 07/2026 (sub=ACTIVE)
+2026-09-05 10:41:46,453  INFO        [OK] 68377 -- Fourniture des équipements bureautique e | Annonceur: Direction des impôts de la wil | Code: 01/2026 (sub=ACTIVE)
+2026-09-05 10:41:47,258  INFO      Wrote 2 rows -> C:\Users\said\algeriemarches-scraper\data\annonces_2026-09-05_10-41-40.csv
+2026-09-05 10:41:47,260  INFO      Appended to master -> C:\Users\said\algeriemarches-scraper\data\annonces_master.csv
+2026-09-05 10:41:47,261  INFO      Saved 4 cookies to disk
+2026-09-05 10:41:47,261  INFO      Run 2026-09-05_10-41-40 done -- 2 results
+2026-09-05 10:42:18,942  INFO      Loaded 4 cookies from disk
+2026-09-05 10:42:18,942  INFO      ============================================================
+2026-09-05 10:42:18,943  INFO      Run 2026-09-05_10-42-18 started
+2026-09-05 10:42:18,943  INFO      Have saved auth cookies, testing...
+2026-09-05 10:42:20,386  INFO      Detail test: OK (137625 bytes)
+2026-09-05 10:42:20,386  INFO      Saved session works!
+2026-09-05 10:42:20,388  INFO      Saved 4 cookies to disk
+2026-09-05 10:42:20,757  INFO      Page 1: 20 annonces
+2026-09-05 10:42:22,091  INFO      Page 2: 20 annonces
+2026-09-05 10:42:24,098  INFO      Page 3: 20 annonces
+2026-09-05 10:42:24,599  INFO      Total: 60 annonces
+2026-09-05 10:42:24,600  INFO      After filter: 2 annonces
+2026-09-05 10:42:25,658  INFO        [OK] 68866 -- Alimentation scolaire  | Annonceur: Commune d'Ouled Khalouf | Code: 07/2026 (sub=ACTIVE)
+2026-09-05 10:42:26,888  INFO        [OK] 68377 -- Fourniture des équipements bureautique e | Annonceur: Direction des impôts de la wil | Code: 01/2026 (sub=ACTIVE)
+2026-09-05 10:42:27,690  INFO      Wrote 2 rows -> C:\Users\said\algeriemarches-scraper\data\annonces_2026-09-05_10-42-18.csv
+2026-09-05 10:42:27,691  INFO      Appended to master -> C:\Users\said\algeriemarches-scraper\data\annonces_master.csv
+2026-09-05 10:42:27,691  INFO      Saved 4 cookies to disk
+2026-09-05 10:42:27,691  INFO      Run 2026-09-05_10-42-18 done -- 2 results
+2026-09-05 12:00:02,058  INFO      Loaded 4 cookies from disk
+2026-09-05 12:00:02,058  INFO      ============================================================
+2026-09-05 12:00:02,058  INFO      Run 2026-09-05_12-00-02 started
+2026-09-05 12:00:02,058  INFO      Have saved auth cookies, testing...
+2026-09-05 12:00:04,382  INFO      Detail test: OK (138233 bytes)
+2026-09-05 12:00:04,383  INFO      Saved session works!
+2026-09-05 12:00:04,384  INFO      Saved 4 cookies to disk
+2026-09-05 12:00:04,796  INFO      Page 1: 20 annonces
+2026-09-05 12:00:05,761  INFO      Page 2: 20 annonces
+2026-09-05 12:00:07,119  INFO      Page 3: 20 annonces
+2026-09-05 12:00:07,620  INFO      Total: 60 annonces
+2026-09-05 12:00:07,622  INFO      After filter: 1 annonces
+2026-09-05 12:00:08,345  INFO        [OK] 68377 -- Fourniture des équipements bureautique e | Annonceur: Direction des impôts de la wil | Code: 01/2026 (sub=ACTIVE)
+2026-09-05 12:00:09,157  INFO      Wrote 1 rows -> C:\Users\said\algeriemarches-scraper\data\annonces_2026-09-05_12-00-02.csv
+2026-09-05 12:00:09,159  INFO      Appended to master -> C:\Users\said\algeriemarches-scraper\data\annonces_master.csv
+2026-09-05 12:00:09,161  INFO      Saved 4 cookies to disk
+2026-09-05 12:00:09,161  INFO      Run 2026-09-05_12-00-02 done -- 1 results
+2026-09-05 12:56:04,628  INFO      Loaded 4 cookies from disk
+2026-09-05 12:56:04,628  INFO      ============================================================
+2026-09-05 12:56:04,628  INFO      Run 2026-09-05_12-56-04 started
+2026-09-05 12:56:04,628  INFO      Have saved auth cookies, testing...
+2026-09-05 12:56:19,701  WARNING   Session check error: HTTPSConnectionPool(host='algeriemarches.com', port=443): Max retries exceeded with url: /api/auth/session (Caused by ConnectTimeoutError(<HTTPSConnection(host='algeriemarches.com', port=443) at 0x1d3f4ad2630>, 'Connection to algeriemarches.com timed out. (connect timeout=15)'))
+2026-09-05 12:56:28,441  INFO      Detail test: OK (137625 bytes)
+2026-09-05 12:56:28,441  INFO      Saved session works!
+2026-09-05 12:56:28,442  INFO      Saved 4 cookies to disk
+2026-09-05 12:56:29,025  INFO      Page 1: 20 annonces
+2026-09-05 12:56:30,336  INFO      Page 2: 20 annonces
+2026-09-05 12:56:32,811  INFO      Page 3: 20 annonces
+2026-09-05 12:56:33,312  INFO      Total: 60 annonces
+2026-09-05 12:56:33,312  INFO      After filter: 1 annonces
+2026-09-05 12:56:33,915  INFO        [OK] 68377 -- Fourniture des équipements bureautique e | Annonceur: Direction des impôts de la wil | Code: 01/2026 (sub=ACTIVE)
+2026-09-05 12:56:34,723  INFO      Wrote 1 rows -> C:\Users\said\algeriemarches-scraper\data\annonces_2026-09-05_12-56-04.csv
+2026-09-05 12:56:34,724  INFO      Appended to master -> C:\Users\said\algeriemarches-scraper\data\annonces_master.csv
+2026-09-05 12:56:34,725  INFO      Checking Downloads Excel file: APPELS-DOFFRE-AVIS-DATTRIBUTION-2026-GAZON.xlsx
+2026-09-05 12:56:35,858  INFO      Target Excel sheet: AVIS D'ATTRIBUTIONS 2026
+2026-09-05 12:56:35,859  INFO      Sheet currently has 421 rows (last N°: 421)
+2026-09-05 12:56:36,842  INFO      Successfully appended 1 new rows to APPELS-DOFFRE-AVIS-DATTRIBUTION-2026-GAZON.xlsx (sheet: AVIS D'ATTRIBUTIONS 2026)
+2026-09-05 12:56:36,842  INFO      Excel sync complete: 1 rows added
+2026-09-05 12:56:36,843  INFO      Saved 4 cookies to disk
+2026-09-05 12:56:36,843  INFO      Run 2026-09-05_12-56-04 done -- 1 results
+2026-09-05 12:56:44,983  INFO      Loaded 4 cookies from disk
+2026-09-05 12:56:44,983  INFO      ============================================================
+2026-09-05 12:56:44,984  INFO      Run 2026-09-05_12-56-44 started
+2026-09-05 12:56:44,984  INFO      Have saved auth cookies, testing...
+2026-09-05 12:56:46,296  INFO      Detail test: OK (137625 bytes)
+2026-09-05 12:56:46,296  INFO      Saved session works!
+2026-09-05 12:56:46,297  INFO      Saved 4 cookies to disk
+2026-09-05 12:56:46,739  INFO      Page 1: 20 annonces
+2026-09-05 12:56:47,887  INFO      Page 2: 20 annonces
+2026-09-05 12:56:48,908  INFO      Page 3: 20 annonces
+2026-09-05 12:56:49,410  INFO      Total: 60 annonces
+2026-09-05 12:56:49,410  INFO      After filter: 1 annonces
+2026-09-05 12:56:49,717  INFO        [OK] 68377 -- Fourniture des équipements bureautique e | Annonceur: Direction des impôts de la wil | Code: 01/2026 (sub=ACTIVE)
+2026-09-05 12:56:50,522  INFO      Wrote 1 rows -> C:\Users\said\algeriemarches-scraper\data\annonces_2026-09-05_12-56-44.csv
+2026-09-05 12:56:50,524  INFO      Appended to master -> C:\Users\said\algeriemarches-scraper\data\annonces_master.csv
+2026-09-05 12:56:50,526  INFO      Checking Downloads Excel file: APPELS-DOFFRE-AVIS-DATTRIBUTION-2026-GAZON.xlsx
+2026-09-05 12:56:51,755  INFO      Target Excel sheet: AVIS D'ATTRIBUTIONS 2026
+2026-09-05 12:56:51,756  INFO      Sheet currently has 422 rows (last N°: 422)
+2026-09-05 12:56:51,756  INFO        Already exists in Excel: EURL BUREAU PLUS (TLEMCEN)
+2026-09-05 12:56:51,756  INFO      No new rows needed for Excel (all already present)
+2026-09-05 12:56:51,756  INFO      Excel sync complete: 0 rows added
+2026-09-05 12:56:51,756  INFO      Saved 4 cookies to disk
+2026-09-05 12:56:51,756  INFO      Run 2026-09-05_12-56-44 done -- 1 results
