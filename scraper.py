@@ -9,6 +9,7 @@ Domain:
   Artificial turf, stadiums, sports facilities, playgrounds, school courtyards (TAPIDOR).
 """
 
+import base64
 import csv
 import json
 import logging
@@ -26,16 +27,22 @@ import gspread
 import openpyxl
 import requests
 from dotenv import load_dotenv
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+from googleapiclient.http import MediaFileUpload
 
 # ── Paths ────────────────────────────────────────────────────────────────────
 SCRIPT_DIR = Path(__file__).resolve().parent
 STATE_DIR = SCRIPT_DIR / "state"
 DATA_DIR = SCRIPT_DIR / "data"
+SCANS_DIR = DATA_DIR / "scans"
 COOKIE_FILE = STATE_DIR / "cookies.json"
 LOG_FILE = SCRIPT_DIR / "scraper.log"
 
 STATE_DIR.mkdir(exist_ok=True)
 DATA_DIR.mkdir(exist_ok=True)
+SCANS_DIR.mkdir(parents=True, exist_ok=True)
 
 # ── Logging ──────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -55,6 +62,8 @@ load_dotenv(SCRIPT_DIR / ".env")
 
 EMAIL = os.getenv("AM_EMAIL", "direction@tapidor.com")
 PASSWORD = os.getenv("AM_PASSWORD", "")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
+GOOGLE_DRIVE_FOLDER_ID = os.getenv("GOOGLE_DRIVE_FOLDER_ID", "").strip()
 
 BASE_URL = "https://algeriemarches.com"
 API_BASE = "https://api.algeriemarches.com/api"
@@ -182,20 +191,38 @@ def clean_annonceur(ann_raw: str) -> str:
         return "DIRECTION DE LA FORMATION ET DE L'ENSEIGNEMENT PROFESSIONNELS"
     return ann_raw[:50].strip()
 
-def parse_budget(montant_str: str):
-    if not montant_str:
+def parse_budget(montant_str):
+    if not montant_str or str(montant_str).strip() == "/":
         return "/"
-    clean = re.sub(r"[^\d.,]", "", str(montant_str)).replace(",", ".")
+    s = str(montant_str).upper().replace("DA", "").replace("DZD", "").strip()
+    s = s.replace(" ", "")
+    if "." in s and "," in s:
+        if s.rfind(",") > s.rfind("."):
+            s = s.replace(".", "").replace(",", ".")
+        else:
+            s = s.replace(",", "")
+    elif "," in s and "." not in s:
+        parts = s.split(",")
+        if len(parts) == 2 and len(parts[1]) <= 2:
+            s = f"{parts[0]}.{parts[1]}"
+        else:
+            s = s.replace(",", "")
+    elif "." in s and "," not in s:
+        parts = s.split(".")
+        if len(parts) == 2 and len(parts[1]) <= 2:
+            pass
+        elif len(parts) > 2:
+            s = "".join(parts)
     try:
-        val = float(clean)
+        val = float(re.sub(r"[^\d.]", "", s))
         return int(val) if val.is_integer() else val
     except Exception:
-        return "/"
+        return str(montant_str).strip()
 
 def parse_delai(nbr_jours: int, description: str) -> str:
     if nbr_jours and int(nbr_jours) > 0:
         return f"{nbr_jours} JOURS"
-    m = re.search(r"\b(\d+\s*(?:JOURS?|MOIS))\b", str(description).upper())
+    m = re.search(r"\b(\d+\s*(?:JOURS?|MOIS|SEMAINES?))\b", str(description).upper())
     if m:
         return m.group(1).strip()
     return "/"
@@ -211,6 +238,163 @@ def parse_date(date_val):
         return datetime(dt.year, dt.month, dt.day)
     except Exception:
         return "/"
+
+# ── AI Scan Vision (Gemini 2.5 Flash) ────────────────────────────────────────
+
+def analyze_scan_with_gemini(img_bytes: bytes, api_key: str | None = None) -> dict:
+    """
+    Use Gemini 2.5 Flash Vision to extract complementary details from attached ad scan:
+    commune, budget, delai, entreprise attributaire, action, type_projet.
+    """
+    key = api_key or GEMINI_API_KEY
+    if not key or not img_bytes:
+        return {}
+
+    b64_img = base64.b64encode(img_bytes).decode("utf-8")
+    prompt = """Analyze this Algerian public procurement announcement scan (Appel d'offres or Avis d'attribution).
+Extract all complementary information in strict JSON format:
+{
+  "action": "Action verb in French (e.g. REALISATION, AMENAGEMENT, REVETEMENT, REHABILITATION, ETUDE ET SUIVI) or '/'",
+  "type_projet": "Facility type (e.g. STADE, TERRAIN DE SPORT, AIRE DE JEUX, MATICO, COMPLEXE SPORTIF) or '/'",
+  "budget": "Winning offer or estimated budget in DZD or numeric value (e.g. 68.890.647,00 DA) or '/' if not found",
+  "delai": "Execution delay (e.g. 60 JOURS, 03 MOIS) or '/' if not found",
+  "commune": "Commune name in UPPERCASE or '/' if not found",
+  "wilaya": "Wilaya name in UPPERCASE or '/' if not found",
+  "annonceur": "Contracting authority name in French or '/' if not found",
+  "entreprise_attributaire": "Winning contractor name if attribution or '/' if not mentioned"
+}"""
+
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={key}"
+    payload = {
+        "contents": [
+            {
+                "parts": [
+                    {"text": prompt},
+                    {"inline_data": {"mime_type": "image/jpeg", "data": b64_img}}
+                ]
+            }
+        ],
+        "generationConfig": {"response_mime_type": "application/json"}
+    }
+
+    for attempt in range(2):
+        try:
+            r = requests.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=35)
+            if r.status_code == 200:
+                content = r.json()["candidates"][0]["content"]["parts"][0]["text"]
+                data = json.loads(content)
+                log.info("Gemini Vision extracted -> Commune: %s | Budget: %s | Delai: %s | Attributaire: %s",
+                         data.get("commune"), data.get("budget"), data.get("delai"), data.get("entreprise_attributaire"))
+                return data
+            else:
+                log.warning("Gemini API attempt %d returned %d: %s", attempt + 1, r.status_code, r.text[:120])
+        except Exception as e:
+            log.warning("Gemini Vision attempt %d error: %s", attempt + 1, e)
+            time.sleep(1.5)
+
+    return {}
+
+# ── Google Drive Manager ─────────────────────────────────────────────────────
+
+class GoogleDriveManager:
+    """Manages date-folder organization and scan uploads in Google Drive."""
+
+    def __init__(self, folder_id: str | None = None):
+        self.folder_id = folder_id or GOOGLE_DRIVE_FOLDER_ID
+        self.service = None
+        self.quota_exceeded = False
+        self._date_folders = {}
+
+        if not self.folder_id:
+            return
+
+        creds = None
+        sa_json = os.getenv("GCP_SERVICE_ACCOUNT_KEY")
+        sa_file = SCRIPT_DIR / "state" / "service_account.json"
+        try:
+            if sa_json:
+                creds_dict = json.loads(sa_json)
+                creds = service_account.Credentials.from_service_account_info(
+                    creds_dict,
+                    scopes=["https://www.googleapis.com/auth/drive"]
+                )
+            elif sa_file.exists():
+                creds = service_account.Credentials.from_service_account_file(
+                    str(sa_file),
+                    scopes=["https://www.googleapis.com/auth/drive"]
+                )
+            if creds:
+                self.service = build("drive", "v3", credentials=creds)
+                log.info("Google Drive service initialized (Target Folder: %s)", self.folder_id)
+        except Exception as e:
+            log.warning("Could not initialize Google Drive service: %s", e)
+
+    def get_or_create_date_folder(self, date_str: str) -> str | None:
+        if not self.service or not self.folder_id:
+            return None
+        if date_str in self._date_folders:
+            return self._date_folders[date_str]
+
+        try:
+            q = f"'{self.folder_id}' in parents and name = '{date_str}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false"
+            res = self.service.files().list(q=q, fields="files(id, name)").execute()
+            files = res.get("files", [])
+            if files:
+                self._date_folders[date_str] = files[0]["id"]
+                return files[0]["id"]
+
+            meta = {
+                "name": date_str,
+                "mimeType": "application/vnd.google-apps.folder",
+                "parents": [self.folder_id]
+            }
+            folder = self.service.files().create(body=meta, fields="id, name").execute()
+            fid = folder.get("id")
+            self._date_folders[date_str] = fid
+            log.info("Created Google Drive date folder '%s' (ID: %s)", date_str, fid)
+            return fid
+        except Exception as e:
+            log.warning("Google Drive: unable to get/create date folder %s: %s", date_str, e)
+            return None
+
+    def upload_scan(self, file_path: Path, date_str: str) -> dict[str, str] | None:
+        if not self.service or self.quota_exceeded or not file_path.exists():
+            return None
+
+        date_folder_id = self.get_or_create_date_folder(date_str)
+        if not date_folder_id:
+            return None
+
+        try:
+            q = f"'{date_folder_id}' in parents and name = '{file_path.name}' and trashed = false"
+            res = self.service.files().list(q=q, fields="files(id, name, webViewLink)").execute()
+            existing = res.get("files", [])
+            if existing:
+                return {"id": existing[0]["id"], "url": existing[0].get("webViewLink", "")}
+
+            mime = "image/jpeg" if file_path.suffix.lower() in [".jpg", ".jpeg"] else "application/octet-stream"
+            media = MediaFileUpload(str(file_path), mimetype=mime, resumable=True)
+            file_meta = {
+                "name": file_path.name,
+                "parents": [date_folder_id]
+            }
+            uploaded = self.service.files().create(body=file_meta, media_body=media, fields="id, name, webViewLink").execute()
+            log.info("Uploaded scan %s to Google Drive (%s)", file_path.name, uploaded["id"])
+            return {"id": uploaded["id"], "url": uploaded.get("webViewLink", "")}
+        except HttpError as e:
+            if "storageQuotaExceeded" in str(e):
+                self.quota_exceeded = True
+                log.warning(
+                    "Drive upload notice: Service Account personal storage quota is 0 MB (Google limitation for personal @gmail folders). "
+                    "Scans are safely stored in GitHub and local data/scans. To enable direct Drive upload, use a Google Workspace Shared Drive."
+                )
+            else:
+                log.warning("Drive upload failed for %s: %s", file_path.name, e)
+            return None
+        except Exception as e:
+            log.warning("Drive upload error for %s: %s", file_path.name, e)
+            return None
+
 
 def get_latest_downloads_excel() -> Path | None:
     downloads = Path.home() / "Downloads"
@@ -302,10 +486,10 @@ def append_to_excel(results: list[dict], notice_type: str, excel_path: Path | No
     for item in results:
         titre = item.get("titre", "")
         annonceur = item.get("annonceur", "")
-        action = classify_action(titre)
-        ptype = classify_type_projet(titre)
+        action = item.get("action") or classify_action(titre)
+        ptype = item.get("ptype") or classify_type_projet(titre)
         wilaya = (item.get("wilaya") or "").strip().upper()
-        commune = parse_commune(titre, annonceur)
+        commune = item.get("commune") if (item.get("commune") and item.get("commune") != "/") else parse_commune(titre, annonceur)
         ann_val = clean_annonceur(annonceur)
 
         dt_parution = parse_date(item.get("date_parution", ""))
@@ -347,8 +531,8 @@ def append_to_excel(results: list[dict], notice_type: str, excel_path: Path | No
             added_count += 1
             existing_items.add(dedup_key)
 
-            budget = parse_budget(item.get("montant", ""))
-            delai = parse_delai(item.get("nbr_jours", 0), item.get("description", ""))
+            budget = parse_budget(item.get("montant", "")) if item.get("montant") else "/"
+            delai = item.get("delai") or parse_delai(item.get("nbr_jours", 0), item.get("description", ""))
 
             row_values = [
                 last_num,                                # Col 1: N°
@@ -486,10 +670,10 @@ def append_to_gsheet(results: list[dict], notice_type: str, sheet_id: str | None
     for item in results:
         titre = item.get("titre", "")
         annonceur = item.get("annonceur", "")
-        action = classify_action(titre)
-        ptype = classify_type_projet(titre)
+        action = item.get("action") or classify_action(titre)
+        ptype = item.get("ptype") or classify_type_projet(titre)
         wilaya = (item.get("wilaya") or "").strip().upper()
-        commune = parse_commune(titre, annonceur)
+        commune = item.get("commune") if (item.get("commune") and item.get("commune") != "/") else parse_commune(titre, annonceur)
         ann_val = clean_annonceur(annonceur)
 
         dt_parution = str(item.get("date_parution", ""))[:10] or "/"
@@ -528,8 +712,8 @@ def append_to_gsheet(results: list[dict], notice_type: str, sheet_id: str | None
             last_num += 1
             existing_items.add(dedup_key)
 
-            budget = parse_budget(item.get("montant", ""))
-            delai = parse_delai(item.get("nbr_jours", 0), item.get("description", ""))
+            budget = parse_budget(item.get("montant", "")) if item.get("montant") else "/"
+            delai = item.get("delai") or parse_delai(item.get("nbr_jours", 0), item.get("description", ""))
 
             row_data = [
                 last_num,                                # Col 1: N°
@@ -575,6 +759,7 @@ class AlgerieMarchesScraper:
             "Referer": f"{BASE_URL}/login",
         })
         self._load_cookies()
+        self.drive_mgr = GoogleDriveManager()
 
     # ── Cookie persistence ───────────────────────────────────────────────────
 
@@ -797,7 +982,7 @@ class AlgerieMarchesScraper:
         if "manage-sessions" in html[:5000]:
             return {"_error": "SESSION_BLOCKED", "_html_len": len(html)}
 
-        result = {"_source": "html", "_html_len": len(html)}
+        result = {"_source": "html", "_html_len": len(html), "_html": html}
 
         # Extract ad JSON from RSC payload
         unescaped = html.replace('\\"', '"').replace('\\\\', '\\')
@@ -858,8 +1043,40 @@ class AlgerieMarchesScraper:
 
         return result
 
+    def get_scan_urls(self, ad_item: dict, detail_html: str = "") -> list[str]:
+        """Resolve all full URLs for attached newspaper scans / images."""
+        urls = []
+
+        # 1. Extract from detail page HTML regex if available
+        if detail_html:
+            raw_urls = re.findall(r'/api/images/ads/[^\"\'\s>]+', detail_html)
+            for u in raw_urls:
+                clean = u.rstrip('\\')
+                full = f"{BASE_URL}{clean}"
+                if full not in urls:
+                    urls.append(full)
+
+        # 2. Extract from ad dictionary fields (image_principale, image_secondaire, etc.)
+        ann_id = str(ad_item.get("id_annonce", "")).strip()
+        date_val = str(ad_item.get("date_parution", ""))[:10]
+        try:
+            dt = datetime.strptime(date_val, "%Y-%m-%d")
+            y, m, d = dt.year, dt.month, dt.day
+        except Exception:
+            now = datetime.now()
+            y, m, d = now.year, now.month, now.day
+
+        for k in ["image_principale", "image_secondaire", "image_ternaire", "image_quaternaire", "image_5", "image_6"]:
+            img_name = ad_item.get(k)
+            if img_name and isinstance(img_name, str) and img_name.lower().endswith((".jpg", ".jpeg", ".png", ".pdf")):
+                constructed = f"{BASE_URL}/api/images/ads/{y}/{m}/{d}/{ann_id}/{img_name}"
+                if constructed not in urls:
+                    urls.append(constructed)
+
+        return urls
+
     def scrape_notice_type(self, notice_type: str, run_id: str) -> list[dict]:
-        """Scrape either 'appels-doffres' or 'avis-attribution'."""
+        """Scrape either 'appels-doffres' or 'avis-attribution' with scan downloads and AI extraction."""
         label = "Appels d'Offres" if notice_type == "appels-doffres" else "Avis d'Attribution"
         log.info("--- Scraping %s (pages 1 to %d) ---", label, MAX_PAGES)
 
@@ -879,7 +1096,9 @@ class AlgerieMarchesScraper:
         filtered = [a for a in all_annonces if KEYWORD_FILTER.search(a.get("titre", ""))]
         log.info("After TAPIDOR keyword filter: %d matching %s", len(filtered), label)
 
+        today_str = datetime.now().strftime("%Y-%m-%d")
         results = []
+
         for a in filtered:
             ann_id = str(a.get("id_annonce", ""))
             slug = a.get("slug", "")
@@ -895,26 +1114,104 @@ class AlgerieMarchesScraper:
                 except Exception as e:
                     time.sleep(2)
 
+            # ── 1. Download Attached Scans & Upload to Google Drive ──
+            scan_urls = self.get_scan_urls(a, detail.get("_html", ""))
+            ad_scan_dir = SCANS_DIR / today_str / ann_id
+            ad_scan_dir.mkdir(parents=True, exist_ok=True)
+            downloaded_scans = []
+
+            for u in scan_urls:
+                fname = u.split("/")[-1]
+                local_fp = ad_scan_dir / fname
+                if not local_fp.exists():
+                    try:
+                        img_r = self.s.get(u, timeout=30)
+                        if img_r.status_code == 200:
+                            local_fp.write_bytes(img_r.content)
+                            log.info("  -> Downloaded scan: %s (%d bytes)", fname, len(img_r.content))
+                    except Exception as e:
+                        log.warning("  -> Failed to download scan %s: %s", u, e)
+
+                if local_fp.exists():
+                    downloaded_scans.append(local_fp)
+                    # Attempt Drive upload
+                    if self.drive_mgr:
+                        self.drive_mgr.upload_scan(local_fp, today_str)
+
+            # ── 2. AI Scan Vision (Gemini 2.5 Flash) ─────────────────
+            ai_data = {}
+            if downloaded_scans and GEMINI_API_KEY:
+                log.info("  -> Scanning attached newspaper file (%s) with Gemini 2.5 Flash Vision...", downloaded_scans[0].name)
+                try:
+                    ai_data = analyze_scan_with_gemini(downloaded_scans[0].read_bytes())
+                except Exception as e:
+                    log.warning("  -> Gemini Vision analysis error: %s", e)
+
+            # ── 3. Merge Web Data with AI Complementary Data ────────
+            wilaya_val = (
+                detail.get("wilaya")
+                or (a.get("wilaya") or {}).get("nom_fr", "")
+                or (ai_data.get("wilaya", "").strip().upper() if ai_data.get("wilaya") != "/" else "")
+            )
+            annonceur_val = (
+                detail.get("annonceur")
+                or (ai_data.get("annonceur", "").strip() if ai_data.get("annonceur") != "/" else "")
+            )
+
+            commune_val = parse_commune(titre, annonceur_val)
+            if (not commune_val or commune_val == "/") and ai_data.get("commune") and ai_data.get("commune") != "/":
+                commune_val = ai_data.get("commune").strip().upper()
+
+            entreprise_val = detail.get("entreprise_concernee", "")
+            if not entreprise_val and ai_data.get("entreprise_attributaire") and ai_data.get("entreprise_attributaire") != "/":
+                entreprise_val = ai_data.get("entreprise_attributaire").strip()
+
+            montant_val = detail.get("montant", "")
+            if not montant_val and ai_data.get("budget") and ai_data.get("budget") != "/":
+                montant_val = ai_data.get("budget").strip()
+
+            delai_val = parse_delai(detail.get("nbr_jours", 0), detail.get("description", ""))
+            if (not delai_val or delai_val == "/") and ai_data.get("delai") and ai_data.get("delai") != "/":
+                delai_val = ai_data.get("delai").strip()
+
+            action_val = classify_action(titre)
+            if action_val == "RÉALISATION" and ai_data.get("action") and ai_data.get("action") != "/":
+                ai_act = classify_action(ai_data.get("action"))
+                if ai_act != "RÉALISATION":
+                    action_val = ai_act
+
+            ptype_val = classify_type_projet(titre)
+            if ptype_val == "COMPLEXE SPORTIF" and ai_data.get("type_projet") and ai_data.get("type_projet") != "/":
+                ai_p = classify_type_projet(ai_data.get("type_projet"))
+                if ai_p != "COMPLEXE SPORTIF":
+                    ptype_val = ai_p
+
             row = {
                 "run_id": run_id,
                 "id": ann_id,
                 "slug": slug,
                 "url": f"{BASE_URL}/annonces/{slug}",
                 "titre": titre,
-                "wilaya": detail.get("wilaya") or (a.get("wilaya") or {}).get("nom_fr", ""),
+                "action": action_val,
+                "ptype": ptype_val,
+                "wilaya": wilaya_val,
+                "commune": commune_val,
                 "date_parution": detail.get("date_parution") or raw_date,
                 "date_echeance": detail.get("date_echeance", ""),
                 "type_annonce": notice_type,
-                "annonceur": detail.get("annonceur", ""),
+                "annonceur": annonceur_val,
                 "code_annonce": detail.get("code_annonce", ""),
-                "entreprise_concernee": detail.get("entreprise_concernee", ""),
-                "montant": detail.get("montant", ""),
+                "entreprise_concernee": entreprise_val,
+                "montant": montant_val,
+                "delai": delai_val,
                 "description": detail.get("description", ""),
                 "nbr_jours": detail.get("nbr_jours", 0),
+                "scans": [str(p) for p in downloaded_scans],
                 "scraped_at": datetime.now().isoformat(),
             }
             results.append(row)
-            log.info("  [MATCH] %s | %s | %s | %s", ann_id, titre[:35], row["wilaya"], row["annonceur"][:25])
+            log.info("  [MATCH] %s | %s | Wilaya: %s | Commune: %s | Annonceur: %s",
+                     ann_id, titre[:35], row["wilaya"], row["commune"], row["annonceur"][:25])
             time.sleep(0.5)
 
         return results

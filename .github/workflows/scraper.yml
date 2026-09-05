@@ -32,16 +32,18 @@ jobs:
           AM_KEYWORDS: ${{ secrets.AM_KEYWORDS }}
           GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
           GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
         run: |
           python scraper.py
 
-      - name: Commit and Push Updated Data & Cookies
+      - name: Commit and Push Updated Data, Scans & Cookies
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add -f state/cookies.json
           git add data/
-          git diff --quiet && git diff --staged --quiet || git commit -m "Automated scrape update $(date +'%Y-%m-%d %H:%M')"
+          git diff --quiet && git diff --staged --quiet || git commit -m "Automated scrape & scans update $(date +'%Y-%m-%d %H:%M')"
           git push
         continue-on-error: true
 
@@ -52,5 +54,6 @@ jobs:
           name: scraper-data
           path: |
             data/*.csv
+            data/scans/
             scraper.log
           retention-days: 14
