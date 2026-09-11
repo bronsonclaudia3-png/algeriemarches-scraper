@@ -211,7 +211,10 @@ def parse_budget(montant_str):
         if len(parts) == 2 and len(parts[1]) <= 2:
             pass
         elif len(parts) > 2:
-            s = "".join(parts)
+            if len(parts[-1]) <= 2:
+                s = f"{''.join(parts[:-1])}.{parts[-1]}"
+            else:
+                s = "".join(parts)
     try:
         val = float(re.sub(r"[^\d.]", "", s))
         return int(val) if val.is_integer() else val
@@ -238,58 +241,77 @@ def parse_date(date_val):
     except Exception:
         return "/"
 
-# ── AI Scan Vision (Gemini 2.5 Flash) ────────────────────────────────────────
+# ── AI Scan Vision (Gemini Vision OCR) ────────────────────────────────────────
+
+GEMINI_MODELS = [
+    "gemini-3.5-flash",
+    "gemini-flash-latest",
+    "gemini-3.6-flash",
+    "gemini-3.5-flash-lite",
+    "gemini-2.5-flash",
+]
 
 def analyze_scan_with_gemini(img_bytes: bytes, api_key: str | None = None) -> dict:
     """
-    Use Gemini 2.5 Flash Vision to extract complementary details from attached ad scan:
+    Use Gemini Vision models to extract complementary details from attached ad scans:
     commune, budget, delai, entreprise attributaire, action, type_projet.
+    Supports French, Arabic, and bilingual Algerian procurement documents with model fallback.
     """
     key = api_key or GEMINI_API_KEY
     if not key or not img_bytes:
         return {}
 
     b64_img = base64.b64encode(img_bytes).decode("utf-8")
-    prompt = """Analyze this Algerian public procurement announcement scan (Appel d'offres or Avis d'attribution).
-Extract all complementary information in strict JSON format:
+    mime = "image/png" if img_bytes[:8] == b"\x89PNG\r\n\x1a\n" else "image/jpeg"
+
+    prompt = """You are an expert OCR and document analysis system specialized in Algerian public procurement (Marchés Publics / الصفقات العمومية: Appels d'offres and Avis d'attribution).
+The document may be in French, Arabic, or bilingual.
+
+Analyze the scan thoroughly, including any tables, stamps, and letterheads, and extract the following in strict JSON:
 {
-  "action": "Action verb in French (e.g. REALISATION, AMENAGEMENT, REVETEMENT, REHABILITATION, ETUDE ET SUIVI) or '/'",
-  "type_projet": "Facility type (e.g. STADE, TERRAIN DE SPORT, AIRE DE JEUX, MATICO, COMPLEXE SPORTIF) or '/'",
-  "budget": "Winning offer or estimated budget in DZD or numeric value (e.g. 68.890.647,00 DA) or '/' if not found",
-  "delai": "Execution delay (e.g. 60 JOURS, 03 MOIS) or '/' if not found",
-  "commune": "Commune name in UPPERCASE or '/' if not found",
-  "wilaya": "Wilaya name in UPPERCASE or '/' if not found",
-  "annonceur": "Contracting authority name in French or '/' if not found",
-  "entreprise_attributaire": "Winning contractor name if attribution or '/' if not mentioned"
+  "action": "Main action verb in French (e.g. REALISATION, AMENAGEMENT, REVETEMENT, REHABILITATION, ETUDE ET SUIVI, RENOVATION) or '/'",
+  "type_projet": "Facility/project type in French (e.g. STADE, STADE COMMUNAL, STADE DE PROXIMITE, TERRAIN DE SPORT, AIRE DE JEUX, SALLE DE SPORT, GAZON SYNTHETIQUE, MATICO) or '/'",
+  "budget": "Final winning amount or estimated budget with currency. In tables, look for headers such as 'Montant', 'Montant TTC', 'Montant après correction', 'Cout de marche', 'المبلغ', 'مبلغ الصفقة', 'مبلغ العرض بعد التصحيح', 'المبلغ بكل الرسوم (دج)'. Always prioritize the final corrected TTC amount. Example: '41 907 265,75 DA' or '/' if none.",
+  "delai": "Execution delay/duration. Look for headers such as 'Délai', 'Délai d\\'exécution', 'Durée', 'مدة الانجاز', 'أجل الانجاز', 'المدة'. Standardize to format 'XX JOURS' or 'XX MOIS'. Example: '04 MOIS' or '60 JOURS' or '/' if none.",
+  "commune": "Commune (municipality) name in UPPERCASE Latin/French letters. Look at the top letterhead ('Commune de...', 'بلدية...'), project title ('à la commune de...', 'ببلدية...'), or table. Transliterate Arabic commune names to standard Algerian French spelling (e.g. 'بلدية بئرغبالو' -> 'BIRGHABALO', 'بلدية الهرانفة' -> 'HARENFA', 'بلدية الرحمانية' -> 'RAHMANIA', 'بلدية سبدو' -> 'SEBDOU', 'بلدية وادي ليلي' -> 'OUED LILLI', 'بلدية الحجيرة' -> 'HADJERA'). If not found, return '/'.",
+  "wilaya": "Wilaya name in UPPERCASE (e.g. MEDEA, CHLEF, ALGER, BOUIRA, TIARET, TLEMCEN, BATNA, TOUGGOURT) or '/'",
+  "annonceur": "Contracting authority name in French (e.g. COMMUNE, DJS DE LA WILAYA, DEP DE LA WILAYA) or '/'",
+  "entreprise_attributaire": "Winning contractor name. Look for headers such as 'Attributaire', 'Entreprise', 'Soumissionnaire retenu', 'المتعهد', 'المؤسسة الفائزة', 'اسم المؤسسة'. Return exact company name or '/' if none."
 }"""
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={key}"
     payload = {
         "contents": [
             {
                 "parts": [
                     {"text": prompt},
-                    {"inline_data": {"mime_type": "image/jpeg", "data": b64_img}}
+                    {"inline_data": {"mime_type": mime, "data": b64_img}}
                 ]
             }
         ],
         "generationConfig": {"response_mime_type": "application/json"}
     }
 
-    for attempt in range(2):
-        try:
-            r = requests.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=35)
-            if r.status_code == 200:
-                content = r.json()["candidates"][0]["content"]["parts"][0]["text"]
-                data = json.loads(content)
-                log.info("Gemini Vision extracted -> Commune: %s | Budget: %s | Delai: %s | Attributaire: %s",
-                         data.get("commune"), data.get("budget"), data.get("delai"), data.get("entreprise_attributaire"))
-                return data
-            else:
-                log.warning("Gemini API attempt %d returned %d: %s", attempt + 1, r.status_code, r.text[:120])
-        except Exception as e:
-            log.warning("Gemini Vision attempt %d error: %s", attempt + 1, e)
-            time.sleep(1.5)
+    for model in GEMINI_MODELS:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
+        for attempt in range(2):
+            try:
+                r = requests.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=45)
+                if r.status_code == 200:
+                    content = r.json()["candidates"][0]["content"]["parts"][0]["text"]
+                    data = json.loads(content)
+                    log.info("Gemini Vision (%s) extracted -> Commune: %s | Budget: %s | Delai: %s | Attributaire: %s",
+                             model, data.get("commune"), data.get("budget"), data.get("delai"), data.get("entreprise_attributaire"))
+                    time.sleep(2.0)
+                    return data
+                elif r.status_code in (429, 503):
+                    log.warning("Gemini (%s) attempt %d rate-limited (%d) -- falling back...", model, attempt + 1, r.status_code)
+                    time.sleep(2.5 * (attempt + 1))
+                    break
+                else:
+                    log.warning("Gemini (%s) attempt %d returned %d: %s", model, attempt + 1, r.status_code, r.text[:120])
+            except Exception as e:
+                log.warning("Gemini (%s) attempt %d error: %s", model, attempt + 1, e)
+                time.sleep(2.0)
 
     return {}
 
@@ -1053,12 +1075,19 @@ class AlgerieMarchesScraper:
                     if self.drive_mgr:
                         self.drive_mgr.upload_scan(local_fp, target_date)
 
-            # ── 2. AI Scan Vision (Gemini 2.5 Flash) ─────────────────
+            # ── 2. AI Scan Vision (Gemini OCR) ───────────────────────
             ai_data = {}
             if downloaded_scans and GEMINI_API_KEY:
-                log.info("  -> Scanning attached newspaper file (%s) with Gemini 2.5 Flash Vision...", downloaded_scans[0].name)
+                log.info("  -> Scanning attached newspaper file (%s) with Gemini Vision...", downloaded_scans[0].name)
                 try:
                     ai_data = analyze_scan_with_gemini(downloaded_scans[0].read_bytes())
+                    # If first scan did not contain budget/attribution and multiple pages exist, inspect second scan
+                    if len(downloaded_scans) > 1 and (not ai_data.get("budget") or ai_data.get("budget") == "/"):
+                        log.info("  -> Checking second scan page (%s) for complementary table data...", downloaded_scans[1].name)
+                        ai_data_p2 = analyze_scan_with_gemini(downloaded_scans[1].read_bytes())
+                        for k, v in ai_data_p2.items():
+                            if v and v != "/" and (not ai_data.get(k) or ai_data.get(k) == "/"):
+                                ai_data[k] = v
                 except Exception as e:
                     log.warning("  -> Gemini Vision analysis error: %s", e)
 
@@ -1074,15 +1103,15 @@ class AlgerieMarchesScraper:
             )
 
             commune_val = parse_commune(titre, annonceur_val)
-            if (not commune_val or commune_val == "/") and ai_data.get("commune") and ai_data.get("commune") != "/":
+            if (not commune_val or commune_val == "/" or len(commune_val) <= 2) and ai_data.get("commune") and ai_data.get("commune") != "/":
                 commune_val = ai_data.get("commune").strip().upper()
 
             entreprise_val = detail.get("entreprise_concernee", "")
-            if not entreprise_val and ai_data.get("entreprise_attributaire") and ai_data.get("entreprise_attributaire") != "/":
+            if (not entreprise_val or entreprise_val == "/") and ai_data.get("entreprise_attributaire") and ai_data.get("entreprise_attributaire") != "/":
                 entreprise_val = ai_data.get("entreprise_attributaire").strip()
 
             montant_val = detail.get("montant", "")
-            if not montant_val and ai_data.get("budget") and ai_data.get("budget") != "/":
+            if (not montant_val or montant_val == "/") and ai_data.get("budget") and ai_data.get("budget") != "/":
                 montant_val = ai_data.get("budget").strip()
 
             delai_val = parse_delai(detail.get("nbr_jours", 0), detail.get("description", ""))
