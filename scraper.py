@@ -1167,8 +1167,8 @@ class AlgerieMarchesScraper:
         if not since_date:
             since_date = os.getenv("AM_SINCE_DATE", "").strip()
         if not since_date:
-            # Default to yesterday for daily automated runs
-            since_date = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+            # Default to last 7 days so weekend publications and downtime gaps are automatically recovered
+            since_date = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
 
         log.info("=" * 60)
         log.info("AlgerieMarches Scraper Run %s started", run_id)
