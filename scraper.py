@@ -312,11 +312,18 @@ class GoogleDriveManager:
         sa_file = SCRIPT_DIR / "state" / "service_account.json"
         try:
             if sa_json:
-                creds_dict = json.loads(sa_json)
-                creds = service_account.Credentials.from_service_account_info(
-                    creds_dict,
-                    scopes=["https://www.googleapis.com/auth/drive"]
-                )
+                try:
+                    if not sa_json.strip().startswith("{"):
+                        sa_json = base64.b64decode(sa_json).decode("utf-8")
+                    creds_dict = json.loads(sa_json)
+                    if "private_key" in creds_dict and "\\n" in creds_dict["private_key"]:
+                        creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
+                    creds = service_account.Credentials.from_service_account_info(
+                        creds_dict,
+                        scopes=["https://www.googleapis.com/auth/drive"]
+                    )
+                except Exception as e:
+                    log.warning("Drive credentials error: %s", e)
             elif sa_file.exists():
                 creds = service_account.Credentials.from_service_account_file(
                     str(sa_file),
@@ -416,7 +423,11 @@ def append_to_gsheet(results: list[dict], notice_type: str, sheet_id: str | None
     gc = None
     if sa_json_env:
         try:
+            if not sa_json_env.strip().startswith("{"):
+                sa_json_env = base64.b64decode(sa_json_env).decode("utf-8")
             creds_dict = json.loads(sa_json_env)
+            if "private_key" in creds_dict and "\\n" in creds_dict["private_key"]:
+                creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
             gc = gspread.service_account_from_dict(creds_dict)
             log.info("Authenticated with Google via GCP_SERVICE_ACCOUNT_KEY env var")
         except Exception as e:
