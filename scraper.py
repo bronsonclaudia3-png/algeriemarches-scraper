@@ -491,6 +491,15 @@ def append_to_gsheet(results: list[dict], notice_type: str, sheet_id: str | None
     log.info("Target Google Sheet worksheet: %s", target_ws.title)
 
     try:
+        header_col = "L3" if notice_type == "appels-doffres" else "P3"
+        header_val = target_ws.acell(header_col).value
+        if header_val != "SCANS":
+            target_ws.update(header_col, [["SCANS"]])
+            log.info("Added SCANS column header to %s in %s", target_ws.title, header_col)
+    except Exception as e:
+        log.debug("Header check notice: %s", e)
+
+    try:
         all_values = target_ws.get_all_values()
     except Exception as e:
         log.error("Failed to read values from Google Sheet: %s", e)
@@ -543,6 +552,18 @@ def append_to_gsheet(results: list[dict], notice_type: str, sheet_id: str | None
         dt_parution = str(item.get("date_parution", ""))[:10] or "/"
         dt_echeance = str(item.get("date_echeance", ""))[:10] or "/"
 
+        ann_id = str(item.get("id", "") or item.get("id_annonce", "")).strip()
+        scans_list = item.get("scans", [])
+        if scans_list and ann_id and dt_parution != "/":
+            scan_names = [Path(s).name for s in scans_list]
+            repo_base = "https://github.com/bronsonclaudia3-png/algeriemarches-scraper"
+            if len(scan_names) == 1:
+                scan_link = f'=HYPERLINK("{repo_base}/blob/main/data/scans/{dt_parution}/{ann_id}/{scan_names[0]}", "📄 Voir Scan")'
+            else:
+                scan_link = f'=HYPERLINK("{repo_base}/tree/main/data/scans/{dt_parution}/{ann_id}", "📁 Voir {len(scan_names)} Scans")'
+        else:
+            scan_link = "/"
+
         if notice_type == "appels-doffres":
             dedup_key = (action.upper(), ptype.upper(), wilaya, commune.upper())
             if dedup_key in existing_items:
@@ -566,6 +587,7 @@ def append_to_gsheet(results: list[dict], notice_type: str, sheet_id: str | None
                 wilaya if wilaya else "/",               # Col 9: WILAYA
                 commune,                                 # Col 10: COMMUNE
                 "TRAVAUX PUBLICS",                       # Col 11: CATEGORIE
+                scan_link,                               # Col 12: SCANS
             ]
             rows_to_append.append(row_data)
         else:
@@ -602,6 +624,7 @@ def append_to_gsheet(results: list[dict], notice_type: str, sheet_id: str | None
                 attr_par if attr_par else "/",           # Col 13: ATTRIBUTION PAR
                 delai,                                   # Col 14: DELAI
                 "/",                                     # Col 15: WILAYA 2
+                scan_link,                               # Col 16: SCANS
             ]
             rows_to_append.append(row_data)
 
