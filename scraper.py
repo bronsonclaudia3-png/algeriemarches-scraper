@@ -244,10 +244,10 @@ def parse_date(date_val):
 # ── AI Scan Vision (Gemini Vision OCR) ────────────────────────────────────────
 
 GEMINI_MODELS = [
-    "gemini-3.5-flash",
-    "gemini-flash-latest",
-    "gemini-3.6-flash",
     "gemini-3.5-flash-lite",
+    "gemini-flash-latest",
+    "gemini-3.5-flash",
+    "gemini-3.6-flash",
     "gemini-2.5-flash",
 ]
 
@@ -255,14 +255,20 @@ def analyze_scan_with_gemini(img_bytes: bytes, api_key: str | None = None) -> di
     """
     Use Gemini Vision models to extract complementary details from attached ad scans:
     commune, budget, delai, entreprise attributaire, action, type_projet.
-    Supports French, Arabic, and bilingual Algerian procurement documents with model fallback.
+    Supports French, Arabic, and bilingual Algerian procurement documents with fast model fallback.
+    Natively handles JPEG, PNG, and PDF formats.
     """
     key = api_key or GEMINI_API_KEY
     if not key or not img_bytes:
         return {}
 
     b64_img = base64.b64encode(img_bytes).decode("utf-8")
-    mime = "image/png" if img_bytes[:8] == b"\x89PNG\r\n\x1a\n" else "image/jpeg"
+    if img_bytes[:4] == b"%PDF":
+        mime = "application/pdf"
+    elif img_bytes[:8] == b"\x89PNG\r\n\x1a\n":
+        mime = "image/png"
+    else:
+        mime = "image/jpeg"
 
     prompt = """You are an expert OCR and document analysis system specialized in Algerian public procurement (Marchés Publics / الصفقات العمومية: Appels d'offres and Avis d'attribution).
 The document may be in French, Arabic, or bilingual.
@@ -293,25 +299,22 @@ Analyze the scan thoroughly, including any tables, stamps, and letterheads, and 
 
     for model in GEMINI_MODELS:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
-        for attempt in range(2):
-            try:
-                r = requests.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=45)
-                if r.status_code == 200:
-                    content = r.json()["candidates"][0]["content"]["parts"][0]["text"]
-                    data = json.loads(content)
-                    log.info("Gemini Vision (%s) extracted -> Commune: %s | Budget: %s | Delai: %s | Attributaire: %s",
-                             model, data.get("commune"), data.get("budget"), data.get("delai"), data.get("entreprise_attributaire"))
-                    time.sleep(2.0)
-                    return data
-                elif r.status_code in (429, 503):
-                    log.warning("Gemini (%s) attempt %d rate-limited (%d) -- falling back...", model, attempt + 1, r.status_code)
-                    time.sleep(2.5 * (attempt + 1))
-                    break
-                else:
-                    log.warning("Gemini (%s) attempt %d returned %d: %s", model, attempt + 1, r.status_code, r.text[:120])
-            except Exception as e:
-                log.warning("Gemini (%s) attempt %d error: %s", model, attempt + 1, e)
-                time.sleep(2.0)
+        try:
+            r = requests.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=15)
+            if r.status_code == 200:
+                content = r.json()["candidates"][0]["content"]["parts"][0]["text"]
+                data = json.loads(content)
+                log.info("Gemini Vision (%s) extracted -> Commune: %s | Budget: %s | Delai: %s | Attributaire: %s",
+                         model, data.get("commune"), data.get("budget"), data.get("delai"), data.get("entreprise_attributaire"))
+                time.sleep(0.5)
+                return data
+            elif r.status_code in (429, 503):
+                log.warning("Gemini (%s) status %d -- falling back immediately...", model, r.status_code)
+                continue
+            else:
+                log.warning("Gemini (%s) returned %d: %s", model, r.status_code, r.text[:120])
+        except Exception as e:
+            log.warning("Gemini (%s) request error (%s) -- falling back...", model, e)
 
     return {}
 
@@ -966,19 +969,29 @@ class AlgerieMarchesScraper:
         return result
 
     def get_scan_urls(self, ad_item: dict, detail_html: str = "") -> list[str]:
-        """Resolve all full URLs for attached newspaper scans / images."""
+        """Resolve all full URLs for attached newspaper scans, images, and PDFs."""
         urls = []
 
-        # 1. Extract from detail page HTML regex if available
+        # 1. Extract from detail page HTML regex (images, PDFs, attachments)
         if detail_html:
-            raw_urls = re.findall(r'/api/images/ads/[^\"\'\s>]+', detail_html)
+            # Match standard image/ad paths
+            raw_urls = re.findall(r'/(?:api/(?:images|documents|files|attachments)/ads/[^\"\'\s>]+)', detail_html)
             for u in raw_urls:
                 clean = u.rstrip('\\')
-                full = f"{BASE_URL}{clean}"
+                full = f"{BASE_URL}{clean}" if clean.startswith("/") else clean
                 if full not in urls:
                     urls.append(full)
 
-        # 2. Extract from ad dictionary fields (image_principale, image_secondaire, etc.)
+            # Match any PDF links in the page
+            pdf_matches = re.findall(r'(?:href|src)=[\"\']([^\"\']+\.pdf[^\"\'\s>]*)[\"\']', detail_html, re.IGNORECASE)
+            for u in pdf_matches:
+                clean = u.rstrip('\\').split("?")[0]
+                if not clean.startswith("http"):
+                    clean = f"{BASE_URL}{clean}" if clean.startswith("/") else f"{BASE_URL}/{clean}"
+                if clean not in urls:
+                    urls.append(clean)
+
+        # 2. Extract from ad dictionary fields (image_principale, pdf, document, etc.)
         ann_id = str(ad_item.get("id_annonce", "")).strip()
         date_val = str(ad_item.get("date_parution", ""))[:10]
         try:
@@ -988,12 +1001,22 @@ class AlgerieMarchesScraper:
             now = datetime.now()
             y, m, d = now.year, now.month, now.day
 
-        for k in ["image_principale", "image_secondaire", "image_ternaire", "image_quaternaire", "image_5", "image_6"]:
-            img_name = ad_item.get(k)
-            if img_name and isinstance(img_name, str) and img_name.lower().endswith((".jpg", ".jpeg", ".png", ".pdf")):
-                constructed = f"{BASE_URL}/api/images/ads/{y}/{m}/{d}/{ann_id}/{img_name}"
-                if constructed not in urls:
-                    urls.append(constructed)
+        keys = [
+            "image_principale", "image_secondaire", "image_ternaire", "image_quaternaire", "image_5", "image_6",
+            "pdf", "document", "fichier", "cahier_charges", "piece_jointe"
+        ]
+        for k in keys:
+            val = ad_item.get(k)
+            if val and isinstance(val, str):
+                val_clean = val.strip()
+                if val_clean.lower().endswith((".jpg", ".jpeg", ".png", ".pdf")):
+                    if val_clean.startswith("http"):
+                        if val_clean not in urls:
+                            urls.append(val_clean)
+                    else:
+                        constructed = f"{BASE_URL}/api/images/ads/{y}/{m}/{d}/{ann_id}/{val_clean}"
+                        if constructed not in urls:
+                            urls.append(constructed)
 
         return urls
 
@@ -1058,7 +1081,7 @@ class AlgerieMarchesScraper:
             downloaded_scans = []
 
             for u in scan_urls:
-                fname = u.split("/")[-1]
+                fname = u.split("/")[-1].split("?")[0]
                 local_fp = ad_scan_dir / fname
                 if not local_fp.exists():
                     try:

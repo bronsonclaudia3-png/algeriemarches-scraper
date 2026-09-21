@@ -1,0 +1,11 @@
+# 📰 Newspaper Scans Gallery — 2026-09-10
+
+> Scans downloaded & OCR-analyzed with Gemini 2.5 Flash for TAPIDOR
+
+| N° | Ad ID | Type | Action & Facility | Wilaya | Commune | Budget | Délai | Scans |
+| :---: | :---: | :---: | :--- | :---: | :---: | :---: | :---: | :---: |
+| 1 | [72685](https://algeriemarches.com/annonces/893654-travaux-de-rehabilitation-et-amenagement-des-aires-des-jeux-en-gazon-synthetique) | Appel d'Offres | **AMÉNAGEMENT ET RÉHABILITATION**<br>GAZON SYNTHÉTIQUE | Alger | BAB EL OUED, BAB EZZAOUR, BIR MOURAD RAIS, BABA ALI SAHOULA, TESSALA EL MERDJA, BELOTA SOUIDANIA, BOUHIRATE SOUIDANIA, LA CONSULAIRE SOUIDANIA | / | 04 MOIS MAXIMUM | [AM_72685_2026910_121145_86209_ad.jpg](72685/AM_72685_2026910_121145_86209_ad.jpg)<br>[AM_72685_2026910_121145_60217_ad.jpg](72685/AM_72685_2026910_121145_60217_ad.jpg) |
+| 2 | [72582](https://algeriemarches.com/annonces/261622-prestations-de-formation-en-master-specialise-professionnel-et-cours-de-specialisation-et-qualification) | Appel d'Offres | **TRAVAUX**<br>COUR | Alger | ALGER | / | / | [AM_72582_2026910_103540_60318_ad.jpg](72582/AM_72582_2026910_103540_60318_ad.jpg)<br>[AM_72582_2026910_103540_11581_ad.jpg](72582/AM_72582_2026910_103540_11581_ad.jpg) |
+| 3 | [72781](https://algeriemarches.com/annonces/591709-amenagement-du-stade-freres-amarouche) | Appel d'Offres | **AMÉNAGEMENT**<br>STADE | Sidi Bel Abbès | SIDI BEL ABBES | / | / | [AM_72781_2026910_124732_22676_ad.jpg](72781/AM_72781_2026910_124732_22676_ad.jpg)<br>[AM_72781_2026910_124732_90635_ad.jpg](72781/AM_72781_2026910_124732_90635_ad.jpg) |
+| 4 | [72369](https://algeriemarches.com/annonces/860390-la-cession-des-droits-de-production-de-diffusion-et-dexploitation-commerciale-ligue-2-de-football-amateu) | Avis d'Attribution | **TRAVAUX**<br>INFRASTRUCTURE SPORTIVE | Alger | / | / | / | [AM_72369_2026910_84729_64518_ad.jpg](72369/AM_72369_2026910_84729_64518_ad.jpg)<br>[AM_72369_2026910_84729_45203_ad.jpg](72369/AM_72369_2026910_84729_45203_ad.jpg) |
+| 5 | [72583](https://algeriemarches.com/annonces/339422-fourniture-pour-lexercice-2026) | Avis d'Attribution | **TRAVAUX**<br>COUR | Biskra | / | / | / | [AM_72583_2026910_103626_39186_ad.jpg](72583/AM_72583_2026910_103626_39186_ad.jpg)<br>[AM_72583_2026910_103626_52988_ad.jpg](72583/AM_72583_2026910_103626_52988_ad.jpg) |
