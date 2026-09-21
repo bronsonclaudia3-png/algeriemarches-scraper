@@ -552,9 +552,11 @@ def append_to_gsheet(results: list[dict], notice_type: str, sheet_id: str | None
             last_num += 1
             existing_items.add(dedup_key)
 
+            date_col_val = dt_parution if dt_parution != "/" else today_str
+
             row_data = [
                 last_num,                                # Col 1: N°
-                today_str,                               # Col 2: DATE
+                date_col_val,                            # Col 2: DATE (aligns with publication date)
                 action,                                  # Col 3: TITRE D'APPEL D'OFFRE
                 1,                                       # Col 4: Nombre de projet
                 ptype,                                   # Col 5: TYPE DE PROJET
@@ -582,9 +584,11 @@ def append_to_gsheet(results: list[dict], notice_type: str, sheet_id: str | None
             budget = parse_budget(item.get("montant", "")) if item.get("montant") else "/"
             delai = item.get("delai") or parse_delai(item.get("nbr_jours", 0), item.get("description", ""))
 
+            date_col_val = dt_parution if dt_parution != "/" else today_str
+
             row_data = [
                 last_num,                                # Col 1: N°
-                today_str,                               # Col 2: DATE
+                date_col_val,                            # Col 2: DATE (aligns with publication date)
                 action,                                  # Col 3: TITRE D'AVIS D'ATTRIBUTION
                 1,                                       # Col 4: Nombre de projet
                 ptype,                                   # Col 5: TYPE DE PROJET
