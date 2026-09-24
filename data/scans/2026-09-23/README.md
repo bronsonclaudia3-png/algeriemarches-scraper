@@ -1,0 +1,13 @@
+# 📰 Newspaper Scans Gallery — 2026-09-23
+
+> Scans downloaded & OCR-analyzed with Gemini 2.5 Flash for TAPIDOR
+
+| N° | Ad ID | Type | Action & Facility | Wilaya | Commune | Budget | Délai | Scans |
+| :---: | :---: | :---: | :--- | :---: | :---: | :---: | :---: | :---: |
+| 1 | [80291](https://algeriemarches.com/annonces/435973-realisation-et-equipement-siege-domni-sport-500-siege) | Appel d'Offres | **RÉALISATION**<br>INFRASTRUCTURE SPORTIVE | Touggourt | OUARGLA | / | / | [AM_80291_2026923_15910_50977_ad.jpg](80291/AM_80291_2026923_15910_50977_ad.jpg) |
+| 2 | [79693](https://algeriemarches.com/annonces/146375-amenagement-de-dix-huit-18-terrains-de-sport-dans-les-ecoles-primaires) | Appel d'Offres | **AMÉNAGEMENT**<br>TERRAIN DE SPORT | Béchar | BÉCHAR | / | / | [AM_79693_2026923_82654_16021_ad.jpg](79693/AM_79693_2026923_82654_16021_ad.jpg)<br>[AM_79693_2026923_82654_98232_ad.jpg](79693/AM_79693_2026923_82654_98232_ad.jpg) |
+| 3 | [79952](https://algeriemarches.com/annonces/314785-controle-de-la-qualite-des-materiaux-realisation-dune-tremie-au-niveau-de-lentree-du-stade-du-5-juillet) | Appel d'Offres | **TRAVAUX**<br>STADE | Alger | ALGER | / | / | [AM_79952_2026923_104817_19571_ad.jpg](79952/AM_79952_2026923_104817_19571_ad.jpg)<br>[AM_79952_2026923_104817_15560_ad.jpg](79952/AM_79952_2026923_104817_15560_ad.jpg) |
+| 4 | [80212](https://algeriemarches.com/annonces/624655-acquisition-de-vehicules-tout-terrain-au-profit-des-services-de-science) | Appel d'Offres | **TRAVAUX**<br>TERRAIN | El Oued | EL OUED | / | / | [AM_80212_2026923_14243_81785_ad.jpg](80212/AM_80212_2026923_14243_81785_ad.jpg) |
+| 5 | [80227](https://algeriemarches.com/annonces/410100-etude-et-realisation-dun-stade-municipal-dans-la-commune-dain-oulmane-section-tribunes) | Appel d'Offres | **ÉTUDE ET SUIVI**<br>STADE | Sétif | AIN OUELMANE | 6000.00 DA | / | [AM_80227_2026923_14378_95989_ad.jpg](80227/AM_80227_2026923_14378_95989_ad.jpg) |
+| 6 | [80046](https://algeriemarches.com/annonces/287413-rehabilitation-et-mise-en-place-du-gazon-synthetique-du-stade-el-remai-commune-de-tebessa) | Appel d'Offres | **RÉHABILITATION**<br>STADE | Tébessa | TEBESSA | / | / | [AM_80046_2026923_122021_90337_ad.jpg](80046/AM_80046_2026923_122021_90337_ad.jpg) |
+| 7 | [80264](https://algeriemarches.com/annonces/711473-acquisition-de-mobiliers-de-burcaux-et-mobiliers-metalliques-au-protit-de-la-cour-de-justice-de-ain-detla-et-ses-tribunaux) | Avis d'Attribution | **TRAVAUX**<br>COUR | Aïn Defla | AIN DEFLA | 11.314.520,00 DA | 05 JOURS | [AM_80264_2026923_145530_78885_ad.jpg](80264/AM_80264_2026923_145530_78885_ad.jpg) |
