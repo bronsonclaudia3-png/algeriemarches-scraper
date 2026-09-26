@@ -258,12 +258,14 @@ def parse_date(date_val):
 
 # ── AI Scan Vision (NVIDIA NIM / DeepSeek OCR) ────────────────────────────────
 
-NVIDIA_MODEL = "deepseek-ai/deepseek-v4.1-flash"
+NVIDIA_MODEL = "z-ai/glm-5.3-flash"
 NVIDIA_FALLBACK_MODELS = [
-    ("deepseek-ai/deepseek-v4.1-flash", 20),
-    ("meta/llama-3.2-11b-vision-instruct", 25),
-    ("moonshotai/kimi-k3", 35),
+    ("z-ai/glm-5.3-flash", 45),
+    ("moonshotai/kimi-k3", 45),
+    ("z-ai/glm-5.3", 45),
+    ("deepseek-ai/deepseek-v4.1-flash", 30),
 ]
+
 
 PROMPT_SCAN_ANALYSIS = """You are an expert document analysis and OCR system specialized in Algerian public procurement (Marchés Publics / الصفقات العمومية) for TAPIDOR, a company specializing exclusively in GAZON (artificial turf / pelouse synthétique / engazonnement / sports turf).
 The document may be in French, Arabic, or bilingual.
