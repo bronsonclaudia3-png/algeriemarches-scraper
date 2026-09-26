@@ -75,7 +75,7 @@ SESSIONS_URL = f"{BASE_URL}/api/auth/active-sessions"
 DISCONNECT_URL = f"{BASE_URL}/api/proxy/auth/disconnect-session"
 
 PAGE_SIZE = 20
-MAX_PAGES = 3
+MAX_PAGES = 15
 
 # Sport & turf keywords for TAPIDOR (Exclusive Gazon Scope)
 DEFAULT_KEYWORDS = r"\b(?:gazon|pelouse|engazonnement|عشب|تعشيب|نجيل|نجيلة|stade|terrain|football|sport)\b"
@@ -84,7 +84,7 @@ ACTIVE_KEYWORDS = KEYWORDS_ENV if KEYWORDS_ENV else DEFAULT_KEYWORDS
 KEYWORD_FILTER = re.compile(ACTIVE_KEYWORDS, re.IGNORECASE)
 
 GAZON_EXPLICIT_KEYWORDS = re.compile(
-    r"\b(?:gazon|pelouse|engazonnement|عشب|تعشيب|نجيل|نجيلة|gazonné|gazonne|gazonnee)\b",
+    r"\b(?:gazon|pelouse|engazonnement|عشب|تعشيب|نجيل|نجيلة|gazonné|gazonne|gazonnee|تكسية\s+اصطناعية)\b",
     re.IGNORECASE
 )
 
@@ -93,7 +93,8 @@ NON_GAZON_EXCLUSIONS = re.compile(
     r"chauffage|climatisation|plomberie|electricite|électricité|éclairage\s+public|eclairage\s+public|"
     r"mobilier|bureau|fourniture\s+de\s+bureau|fournitures\s+de\s+bureau|عتاد\s+مكتبي|أثاث|اثاث|طباعة|"
     r"assiette\s+de\s+terrain|assiette\s+fonciere|assiette\s+foncière|logement|logements|aadl|lpp|lpa|pos|viabilisation|geotechnique|géotechnique|"
-    r"assainissement|assainisement|aep|drainage|cantine|salle\s+omnisport|salle\s+de\s+sport|piscine)\b",
+    r"assainissement|assainisement|aep|drainage|cantine|salle\s+omnisport|salle\s+de\s+sport|piscine|"
+    r"véhicule|véhicules|vehicule|vehicules|trémie|tremie|gradin|gradins)\b",
     re.IGNORECASE
 )
 
@@ -258,28 +259,27 @@ def parse_date(date_val):
 
 # ── AI Scan Vision (NVIDIA NIM / DeepSeek OCR) ────────────────────────────────
 
-NVIDIA_MODEL = "z-ai/glm-5.3-flash"
+NVIDIA_MODEL = "google/diffusiongemma-26b-a4b-it"
 NVIDIA_FALLBACK_MODELS = [
-    ("z-ai/glm-5.3-flash", 45),
-    ("moonshotai/kimi-k3", 45),
-    ("z-ai/glm-5.3", 45),
-    ("deepseek-ai/deepseek-v4.1-flash", 30),
+    ("google/diffusiongemma-26b-a4b-it", 30),
+    ("z-ai/glm-5.3-flash", 15),
+    ("moonshotai/kimi-k3", 15),
 ]
 
 
-PROMPT_SCAN_ANALYSIS = """You are an expert document analysis and OCR system specialized in Algerian public procurement (Marchés Publics / الصفقات العمومية) for TAPIDOR, a company specializing exclusively in GAZON (artificial turf / pelouse synthétique / engazonnement / sports turf).
+PROMPT_SCAN_ANALYSIS = """You are an expert document analysis and OCR system specialized in Algerian public procurement (Marchés Publics / الصفقات العمومية) for TAPIDOR, a company specializing exclusively in GAZON (artificial turf / pelouse synthétique / engazonnement / sports turf / تكسية اصطناعية للملاعب).
 The document may be in French, Arabic, or bilingual.
 
 CRITICAL REQUIREMENT (GAZON SCOPE FILTER):
-Determine whether this project specifically involves GAZON (artificial turf / pelouse synthétique / engazonnement / natural sports turf).
-If the project is NOT about gazon (for example: it is civil works, building construction, concrete or asphalt paving without turf, indoor sports halls without turf, heating, office furniture, geotechnical study, housing, sanitation/sewerage, electrical works):
+Determine whether this project specifically involves GAZON (artificial turf / pelouse synthétique / engazonnement / natural sports turf / تكسية اصطناعية لملعب / تعشيب / عشب اصطناعي).
+If the project is NOT about sports turf/gazon (for example: it is civil works, building construction, concrete or asphalt paving without turf, indoor sports halls without turf, heating, office furniture, geotechnical study, housing, sanitation/sewerage, electrical works):
 Set "is_gazon": false.
-Only set "is_gazon": true if the project explicitly involves GAZON / PELOUSE / ENGAZONNEMENT (e.g. fourniture et pose de gazon synthétique, engazonnement de terrain/stade, revêtement en gazon synthétique / تغطية بالعشب الاصطناعي / تعشيب).
+Only set "is_gazon": true if the project explicitly involves GAZON / PELOUSE / ENGAZONNEMENT / SPORTS STADIUM SYNTHETIC TURF (e.g. fourniture et pose de gazon synthétique, engazonnement de terrain/stade, revêtement en gazon synthétique / تغطية بالعشب الاصطناعي / تعشيب / تجديد التكسية الاصطناعية لملعب).
 
 DATE DE PARUTION REQUIREMENT (FOR AVIS D'ATTRIBUTION):
 Extract "date_parution_ao" strictly from INSIDE the text paragraph (where it mentions when the original Appel d'Offres was published, e.g. 'paru le 22/07/2026' or 'الصادرة بتاريخ 2026/07/22').
 If NO publication date is mentioned in the paragraph text, return '/'.
-NEVER use the newspaper print date or footer date at the very bottom (such as 'An-Nasr 21-9-2026' or 'El-Moudjahid 22-09-2026').
+NEVER use the newspaper print date or footer date at the very bottom (such as 'An-Nasr 21-9-2026', ANEP footer, or 'El-Moudjahid 22-09-2026').
 
 Extract the following in strict JSON:
 {
@@ -291,7 +291,7 @@ Extract the following in strict JSON:
   "commune": "Commune (municipality) name in UPPERCASE Latin/French letters or '/'",
   "wilaya": "Wilaya name in UPPERCASE or '/'",
   "annonceur": "Contracting authority name in French or '/'",
-  "entreprise_attributaire": "Winning contractor name or '/' if none.",
+  "entreprise_attributaire": "Winning contractor name in Latin letters or '/' if none.",
   "date_parution_ao": "Date when original Appel d'Offres was published strictly from INSIDE the paragraph text (or '/' if not in paragraph text)."
 }
 Return ONLY valid JSON."""
