@@ -908,23 +908,30 @@ class AlgerieMarchesScraper:
         return r.json()["csrfToken"]
 
     def _login(self, csrf: str) -> bool:
+        payload = {
+            "csrfToken": csrf,
+            "identifier": EMAIL,
+            "email": EMAIL,
+            "password": PASSWORD,
+            "callbackUrl": BASE_URL,
+        }
         r = self.s.post(
             LOGIN_URL,
-            json={
-                "csrfToken": csrf,
-                "identifier": EMAIL,
-                "email": EMAIL,
-                "password": PASSWORD,
-                "callbackUrl": BASE_URL,
+            data=payload,
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-Auth-Return-Redirect": "1",
             },
-            headers={"Content-Type": "application/json"},
-            allow_redirects=False,
             timeout=40,
         )
         has_auth = self._has_auth_cookies()
-        loc = r.headers.get("Location", "")
-        log.info("Login: status=%d location=%s has_auth=%s", r.status_code, loc[:80], has_auth)
+        try:
+            res_url = r.json().get("url", "")
+        except Exception:
+            res_url = r.headers.get("Location", "")
+        log.info("Login: status=%d result_url=%s has_auth=%s", r.status_code, res_url[:80], has_auth)
         return has_auth
+
 
     def _get_connect_sid_id(self) -> str:
         for c in self.s.cookies:
@@ -1027,7 +1034,9 @@ class AlgerieMarchesScraper:
         self.s.cookies.clear()
         csrf = self._get_csrf()
         if not self._login(csrf):
-            raise RuntimeError("Login failed -- check password in .env")
+            log.warning("Login failed -- continuing without authenticated session (public mode)")
+            return
+
 
         my_id = self._get_connect_sid_id()
         sessions = self._list_sessions()

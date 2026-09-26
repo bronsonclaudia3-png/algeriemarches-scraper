@@ -1,7 +1,7 @@
 [
   {
     "name": "__Host-authjs.csrf-token",
-    "value": "58d9b0d379efc110af6f8c36475e528c6a09fd2e171b449dcd99280bcb8811f1%7C9d82b8bdc2e7cb590a65e2f598aa00bf8ba159f3c016838f2715f5c97b065b07",
+    "value": "b5b5986c7bbee996c7f3d14352bb18fd3c76531e82e41a880b7bce52104ec327%7C7b008f89d6d68717ffd508ccc50d72f432226f5ea6518f2be16f0485ab92d792",
     "domain": "algeriemarches.com",
     "path": "/",
     "secure": true,
@@ -10,22 +10,6 @@
   {
     "name": "__Secure-authjs.callback-url",
     "value": "https%3A%2F%2Falgeriemarches.com",
-    "domain": "algeriemarches.com",
-    "path": "/",
-    "secure": true,
-    "expires": null
-  },
-  {
-    "name": "__Secure-authjs.session-token",
-    "value": "eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2Q0JDLUhTNTEyIiwia2lkIjoiU1A5YUtMNGlsa0Q2T3JtbktNNDVzcTgtRklhb0RGdW90UU1WZ3kyQWx4cl9idjdRa2pfeHV4VmNDRzBuczBXdFQ1d2J3bWJWd0Nvck4xTzJkb2YzcEEifQ..9DdrffMB7EFxx5n7tQi7Vg.l67VNiaTCBdtL_-x8hEmoyH8M6nBNDF6NldyuURDfXKyAclAcCdNO_lWUdy7pYmhpFB7LP3XrUhlDzNeZt78d4h-X2qFBAToTOwtF1lLJ4krGg-1UscxIgNPprUzkNy0j6Isc5-_r0tHJFj6oEi6YM4TexADFrRkBhU0maNH1Lo8shqvVJWNdIjWVE_ad74Zw5kNU_pnzoOON3Y3A2g_dJ9b_PsZEWMHnmrrw_tKeCKgK9lleafypzXjvno4GM0_-F6eNXhioIERx9vPERmsOAnMmED88o2Qb8CGlRfCGP2YEqhLrRRODzpIW2hDt5DO3n3mXkXrsBBocpQMD6cmH3Ao0Qbn0QlHZNVaD8vC2l-Sb-z_6H6eq4VZucOl39_m8xXPIn_VpxNfnmSPtpeJ9LVT3sjn_iZNMHbA5vZfdXPZkD3Nol_ntuqQeh2JIBputPwlqlVz4okT3wNzCQV1A03JnAOeSEB_MODlXLUsTvzaneB8CR0xVSWa6GLTEVduo8WyoSy9q97dedmS3CB2BGga3fS6W7-4JzwMW_xNCFgdy4qL4cSC8PHEx65ZD_mhmKPPG6iV1sakLdhA4b-7BC4oEcm8oFy_UA1kO5cAL8AwmHusP7o5kFMxSG2hDo2T-K6Wa5BG_nt1tI6bTC6xdMyJdkoTNfKP0gB8uOZbG-qAula2626-jwxPbbqTbfqhURk_6uB1yYRDmcbBjPdWlsRvzOM56GRD6s2aK6HGrikG_vBaQ1nwOweNxIZ1Tlku-uFzcMiPcmktTQw4EInu_-cvSQ2z_5_ruayKrtDFIWg-rtfsIQPnVnkJc42DNaQvpl-80V-RsNPgk9Fq8ad_t92Qjhjvesf7hzrRELefpWfaKN_eX6DZva8V6K1cP4Huai4-5We4bW195c7lt0L_xxNqxTFJPn59RwRJFSxD6KYGHxRJrdYIpTpiu7mMyRpUlPttaDPZE8ZSzRp1rxAPxBRp0VSjwmXr0EOK9MMrLBuHiCyY7BTuiBSx3A5Rbh5fi8qZKD2bQsfm6SYDbvmgwm32EdYs_hwZkZhGF7X49h6Pj3pDeivFy3gmFjdcLwTjybJib6EWoFSKpUTk_hpEElkSwHAdFl9L0aZkByUn7AkKW0o7marOgJO_O0Zu-zzvSJ16sOLRQXLaObufKIYGeIaEYN207A_opjBGldW00L6etJlG2O5NBSbC8CxNVwHn9PD805HhjjaRW1KkN9wWh3pCJTxHPCRQQCMdayyWEG6fYdM-HiWZ5UePfKObTU_Q.T1_o9Sk7DAu76IzVn956Heb8MFOJkOh3pVcmz5s70UU",
-    "domain": "algeriemarches.com",
-    "path": "/",
-    "secure": true,
-    "expires": 1792825942
-  },
-  {
-    "name": "connect.sid",
-    "value": "s%3AdTXsGwo9K6mLzRffHU_3kQPeusL4d4qi.FjN8szaka4Gtqbh3Bdn30Pi1dnsLVjMyWOzIglHG1AE",
     "domain": "algeriemarches.com",
     "path": "/",
     "secure": true,
