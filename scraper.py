@@ -62,6 +62,7 @@ load_dotenv(SCRIPT_DIR / ".env")
 EMAIL = os.getenv("AM_EMAIL", "direction@tapidor.com")
 PASSWORD = os.getenv("AM_PASSWORD", "")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
+NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY", "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").strip()
 GOOGLE_DRIVE_FOLDER_ID = os.getenv("GOOGLE_DRIVE_FOLDER_ID", "").strip()
 
 BASE_URL = "https://algeriemarches.com"
@@ -241,7 +242,128 @@ def parse_date(date_val):
     except Exception:
         return "/"
 
-# ── AI Scan Vision (Gemini Vision OCR) ────────────────────────────────────────
+# ── AI Scan Vision (NVIDIA NIM / DeepSeek OCR) ────────────────────────────────
+
+NVIDIA_MODEL = "deepseek-ai/deepseek-v4.1-flash"
+NVIDIA_FALLBACK_MODELS = [
+    "deepseek-ai/deepseek-v4.1-flash",
+    "moonshotai/kimi-k3",
+    "meta/llama-3.2-11b-vision-instruct",
+]
+
+def prepare_image_for_ocr(img_bytes: bytes, max_dim: int = 1600) -> tuple[bytes, str]:
+    """Ensure image is optimized to prevent timeout on vision endpoints."""
+    if not img_bytes:
+        return b"", "image/jpeg"
+    if img_bytes[:4] == b"%PDF":
+        return img_bytes, "application/pdf"
+    mime = "image/png" if img_bytes[:8] == b"\x89PNG\r\n\x1a\n" else "image/jpeg"
+    try:
+        from PIL import Image
+        import io
+        im = Image.open(io.BytesIO(img_bytes))
+        if im.mode in ("RGBA", "P"):
+            im = im.convert("RGB")
+        if max(im.size) > max_dim or len(img_bytes) > 350 * 1024:
+            im.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
+            buf = io.BytesIO()
+            im.save(buf, format="JPEG", quality=85, optimize=True)
+            return buf.getvalue(), "image/jpeg"
+    except Exception as e:
+        log.debug("Image optimization bypassed: %s", e)
+    return img_bytes, mime
+
+def extract_json_from_text(text: str) -> dict:
+    if not text:
+        return {}
+    try:
+        return json.loads(text.strip())
+    except Exception:
+        pass
+    m = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", text)
+    if m:
+        try:
+            return json.loads(m.group(1).strip())
+        except Exception:
+            pass
+    m = re.search(r"(\{[\s\S]*\})", text)
+    if m:
+        try:
+            return json.loads(m.group(1).strip())
+        except Exception:
+            pass
+    return {}
+
+def analyze_scan_with_nvidia(img_bytes: bytes, api_key: str | None = None) -> dict:
+    """
+    Extract complementary details from attached ad scans using NVIDIA NIM free endpoints.
+    Primary model: deepseek-ai/deepseek-v4.1-flash.
+    """
+    key = api_key or NVIDIA_API_KEY
+    if not key or not img_bytes:
+        return {}
+
+    opt_bytes, mime = prepare_image_for_ocr(img_bytes)
+    b64_img = base64.b64encode(opt_bytes).decode("utf-8")
+
+    prompt = """You are an expert OCR and document analysis system specialized in Algerian public procurement (Marchés Publics / الصفقات العمومية: Appels d'offres and Avis d'attribution).
+The document may be in French, Arabic, or bilingual.
+
+Analyze the scan thoroughly, including any tables, stamps, and letterheads, and extract the following in strict JSON:
+{
+  "action": "Main action verb in French (e.g. REALISATION, AMENAGEMENT, REVETEMENT, REHABILITATION, ETUDE ET SUIVI, RENOVATION) or '/'",
+  "type_projet": "Facility/project type in French (e.g. STADE, STADE COMMUNAL, STADE DE PROXIMITE, TERRAIN DE SPORT, AIRE DE JEUX, SALLE DE SPORT, GAZON SYNTHETIQUE, MATICO) or '/'",
+  "budget": "Final winning amount or estimated budget with currency. In tables, look for headers such as 'Montant', 'Montant TTC', 'Montant après correction', 'Cout de marche', 'المبلغ', 'مبلغ الصفقة', 'مبلغ العرض بعد التصحيح', 'المبلغ بكل الرسوم (دج)'. Always prioritize the final corrected TTC amount. Example: '41 907 265,75 DA' or '/' if none.",
+  "delai": "Execution delay/duration. Look for headers such as 'Délai', 'Délai d\\'exécution', 'Durée', 'مدة الانجاز', 'أجل الانجاز', 'المدة'. Standardize to format 'XX JOURS' or 'XX MOIS'. Example: '04 MOIS' or '60 JOURS' or '/' if none.",
+  "commune": "Commune (municipality) name in UPPERCASE Latin/French letters. Look at the top letterhead ('Commune de...', 'بلدية...'), project title ('à la commune de...', 'ببلدية...'), or table. Transliterate Arabic commune names to standard Algerian French spelling (e.g. 'بلدية بئرغبالو' -> 'BIRGHABALO', 'بلدية الهرانفة' -> 'HARENFA', 'بلدية الرحمانية' -> 'RAHMANIA', 'بلدية سبدو' -> 'SEBDOU', 'بلدية وادي ليلي' -> 'OUED LILLI', 'بلدية الحجيرة' -> 'HADJERA'). If not found, return '/'.",
+  "wilaya": "Wilaya name in UPPERCASE (e.g. MEDEA, CHLEF, ALGER, BOUIRA, TIARET, TLEMCEN, BATNA, TOUGGOURT) or '/'",
+  "annonceur": "Contracting authority name in French (e.g. COMMUNE, DJS DE LA WILAYA, DEP DE LA WILAYA) or '/'",
+  "entreprise_attributaire": "Winning contractor name. Look for headers such as 'Attributaire', 'Entreprise', 'Soumissionnaire retenu', 'المتعهد', 'المؤسسة الفائزة', 'اسم المؤسسة'. Return exact company name or '/' if none."
+}
+Return ONLY valid JSON."""
+
+    url = "https://integrate.api.nvidia.com/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {key}",
+        "Content-Type": "application/json"
+    }
+
+    for model in NVIDIA_FALLBACK_MODELS:
+        payload = {
+            "model": model,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64_img}"}}
+                    ]
+                }
+            ],
+            "max_tokens": 1024,
+            "temperature": 0.1
+        }
+        try:
+            r = requests.post(url, headers=headers, json=payload, timeout=35)
+            if r.status_code == 200:
+                res = r.json()
+                msg = res["choices"][0]["message"]
+                raw_text = msg.get("content") or msg.get("reasoning_content") or ""
+                data = extract_json_from_text(raw_text)
+                if data and isinstance(data, dict):
+                    log.info("NVIDIA NIM (%s) extracted -> Commune: %s | Budget: %s | Delai: %s | Attributaire: %s",
+                             model, data.get("commune"), data.get("budget"), data.get("delai"), data.get("entreprise_attributaire"))
+                    time.sleep(0.5)
+                    return data
+            elif r.status_code in (429, 503):
+                log.warning("NVIDIA NIM (%s) status %d -- falling back...", model, r.status_code)
+                continue
+            else:
+                log.warning("NVIDIA NIM (%s) returned %d: %s", model, r.status_code, r.text[:120])
+        except Exception as e:
+            log.warning("NVIDIA NIM (%s) request error (%s) -- falling back...", model, e)
+
+    return {}
 
 GEMINI_MODELS = [
     "gemini-3.5-flash-lite",
@@ -252,12 +374,6 @@ GEMINI_MODELS = [
 ]
 
 def analyze_scan_with_gemini(img_bytes: bytes, api_key: str | None = None) -> dict:
-    """
-    Use Gemini Vision models to extract complementary details from attached ad scans:
-    commune, budget, delai, entreprise attributaire, action, type_projet.
-    Supports French, Arabic, and bilingual Algerian procurement documents with fast model fallback.
-    Natively handles JPEG, PNG, and PDF formats.
-    """
     key = api_key or GEMINI_API_KEY
     if not key or not img_bytes:
         return {}
@@ -315,6 +431,27 @@ Analyze the scan thoroughly, including any tables, stamps, and letterheads, and 
                 log.warning("Gemini (%s) returned %d: %s", model, r.status_code, r.text[:120])
         except Exception as e:
             log.warning("Gemini (%s) request error (%s) -- falling back...", model, e)
+
+    return {}
+
+def analyze_scan(img_bytes: bytes) -> dict:
+    """
+    Primary scan analysis using NVIDIA NIM (DeepSeek v4.1-flash).
+    Falls back to Gemini if NVIDIA key is absent or NIM endpoints fail.
+    """
+    if NVIDIA_API_KEY:
+        try:
+            data = analyze_scan_with_nvidia(img_bytes)
+            if data:
+                return data
+        except Exception as e:
+            log.warning("NVIDIA NIM analysis error: %s", e)
+
+    if GEMINI_API_KEY:
+        try:
+            return analyze_scan_with_gemini(img_bytes)
+        except Exception as e:
+            log.warning("Gemini fallback analysis error: %s", e)
 
     return {}
 
@@ -1125,21 +1262,22 @@ class AlgerieMarchesScraper:
                     if self.drive_mgr:
                         self.drive_mgr.upload_scan(local_fp, target_date)
 
-            # ── 2. AI Scan Vision (Gemini OCR) ───────────────────────
+            # ── 2. AI Scan Vision (NVIDIA NIM / Gemini OCR) ───────────
             ai_data = {}
-            if downloaded_scans and GEMINI_API_KEY:
-                log.info("  -> Scanning attached newspaper file (%s) with Gemini Vision...", downloaded_scans[0].name)
+            if downloaded_scans and (NVIDIA_API_KEY or GEMINI_API_KEY):
+                engine_name = f"NVIDIA NIM ({NVIDIA_MODEL})" if NVIDIA_API_KEY else "Gemini"
+                log.info("  -> Scanning attached newspaper file (%s) with %s...", downloaded_scans[0].name, engine_name)
                 try:
-                    ai_data = analyze_scan_with_gemini(downloaded_scans[0].read_bytes())
+                    ai_data = analyze_scan(downloaded_scans[0].read_bytes())
                     # If first scan did not contain budget/attribution and multiple pages exist, inspect second scan
                     if len(downloaded_scans) > 1 and (not ai_data.get("budget") or ai_data.get("budget") == "/"):
                         log.info("  -> Checking second scan page (%s) for complementary table data...", downloaded_scans[1].name)
-                        ai_data_p2 = analyze_scan_with_gemini(downloaded_scans[1].read_bytes())
+                        ai_data_p2 = analyze_scan(downloaded_scans[1].read_bytes())
                         for k, v in ai_data_p2.items():
                             if v and v != "/" and (not ai_data.get(k) or ai_data.get(k) == "/"):
                                 ai_data[k] = v
                 except Exception as e:
-                    log.warning("  -> Gemini Vision analysis error: %s", e)
+                    log.warning("  -> AI Vision analysis error: %s", e)
 
             # ── 3. Merge Web Data with AI Complementary Data ────────
             wilaya_val = (
