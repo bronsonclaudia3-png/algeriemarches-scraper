@@ -77,11 +77,25 @@ DISCONNECT_URL = f"{BASE_URL}/api/proxy/auth/disconnect-session"
 PAGE_SIZE = 20
 MAX_PAGES = 3
 
-# Sport & turf keywords for TAPIDOR
-DEFAULT_KEYWORDS = r"\b(?:gazon|pelouse|engazonnement|stade|terrain|sport|football|jeux|matico|matiquo|athletisme|cour|cours)\b"
+# Sport & turf keywords for TAPIDOR (Exclusive Gazon Scope)
+DEFAULT_KEYWORDS = r"\b(?:gazon|pelouse|engazonnement|عشب|تعشيب|نجيل|نجيلة|stade|terrain|football|sport)\b"
 KEYWORDS_ENV = os.getenv("AM_KEYWORDS", "").strip()
 ACTIVE_KEYWORDS = KEYWORDS_ENV if KEYWORDS_ENV else DEFAULT_KEYWORDS
 KEYWORD_FILTER = re.compile(ACTIVE_KEYWORDS, re.IGNORECASE)
+
+GAZON_EXPLICIT_KEYWORDS = re.compile(
+    r"\b(?:gazon|pelouse|engazonnement|عشب|تعشيب|نجيل|نجيلة|gazonné|gazonne|gazonnee)\b",
+    re.IGNORECASE
+)
+
+NON_GAZON_EXCLUSIONS = re.compile(
+    r"\b(?:cour\s+de\s+justice|cours\s+de\s+justice|tribunal|tribunaux|مجلس\s+قضاء|محكمة|"
+    r"chauffage|climatisation|plomberie|electricite|électricité|éclairage\s+public|eclairage\s+public|"
+    r"mobilier|bureau|fourniture\s+de\s+bureau|fournitures\s+de\s+bureau|عتاد\s+مكتبي|أثاث|اثاث|طباعة|"
+    r"assiette\s+de\s+terrain|assiette\s+fonciere|assiette\s+foncière|logement|logements|aadl|lpp|lpa|pos|viabilisation|geotechnique|géotechnique|"
+    r"assainissement|assainisement|aep|drainage|cantine|salle\s+omnisport|salle\s+de\s+sport|piscine)\b",
+    re.IGNORECASE
+)
 
 UA = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -246,10 +260,39 @@ def parse_date(date_val):
 
 NVIDIA_MODEL = "deepseek-ai/deepseek-v4.1-flash"
 NVIDIA_FALLBACK_MODELS = [
-    "deepseek-ai/deepseek-v4.1-flash",
-    "moonshotai/kimi-k3",
-    "meta/llama-3.2-11b-vision-instruct",
+    ("deepseek-ai/deepseek-v4.1-flash", 20),
+    ("meta/llama-3.2-11b-vision-instruct", 25),
+    ("moonshotai/kimi-k3", 35),
 ]
+
+PROMPT_SCAN_ANALYSIS = """You are an expert document analysis and OCR system specialized in Algerian public procurement (Marchés Publics / الصفقات العمومية) for TAPIDOR, a company specializing exclusively in GAZON (artificial turf / pelouse synthétique / engazonnement / sports turf).
+The document may be in French, Arabic, or bilingual.
+
+CRITICAL REQUIREMENT (GAZON SCOPE FILTER):
+Determine whether this project specifically involves GAZON (artificial turf / pelouse synthétique / engazonnement / natural sports turf).
+If the project is NOT about gazon (for example: it is civil works, building construction, concrete or asphalt paving without turf, indoor sports halls without turf, heating, office furniture, geotechnical study, housing, sanitation/sewerage, electrical works):
+Set "is_gazon": false.
+Only set "is_gazon": true if the project explicitly involves GAZON / PELOUSE / ENGAZONNEMENT (e.g. fourniture et pose de gazon synthétique, engazonnement de terrain/stade, revêtement en gazon synthétique / تغطية بالعشب الاصطناعي / تعشيب).
+
+DATE DE PARUTION REQUIREMENT (FOR AVIS D'ATTRIBUTION):
+Extract "date_parution_ao" strictly from INSIDE the text paragraph (where it mentions when the original Appel d'Offres was published, e.g. 'paru le 22/07/2026' or 'الصادرة بتاريخ 2026/07/22').
+If NO publication date is mentioned in the paragraph text, return '/'.
+NEVER use the newspaper print date or footer date at the very bottom (such as 'An-Nasr 21-9-2026' or 'El-Moudjahid 22-09-2026').
+
+Extract the following in strict JSON:
+{
+  "is_gazon": true or false,
+  "action": "Main action verb in French (e.g. REALISATION, AMENAGEMENT, REVETEMENT, REHABILITATION, REFECTION) or '/'",
+  "type_projet": "Facility type in French (e.g. STADE, STADE COMMUNAL, STADE DE PROXIMITE, TERRAIN DE SPORT, GAZON SYNTHETIQUE) or '/'",
+  "budget": "Final winning amount or estimated budget with currency. Prioritize final corrected TTC amount. Example: '37 756 320,00 DA' or '/' if none.",
+  "delai": "Execution delay. Format 'XX JOURS' or 'XX MOIS'. Example: '03 MOIS' or '60 JOURS' or '/' if none.",
+  "commune": "Commune (municipality) name in UPPERCASE Latin/French letters or '/'",
+  "wilaya": "Wilaya name in UPPERCASE or '/'",
+  "annonceur": "Contracting authority name in French or '/'",
+  "entreprise_attributaire": "Winning contractor name or '/' if none.",
+  "date_parution_ao": "Date when original Appel d'Offres was published strictly from INSIDE the paragraph text (or '/' if not in paragraph text)."
+}
+Return ONLY valid JSON."""
 
 def prepare_image_for_ocr(img_bytes: bytes, max_dim: int = 1600) -> tuple[bytes, str]:
     """Ensure image is optimized to prevent timeout on vision endpoints."""
@@ -306,36 +349,20 @@ def analyze_scan_with_nvidia(img_bytes: bytes, api_key: str | None = None) -> di
     opt_bytes, mime = prepare_image_for_ocr(img_bytes)
     b64_img = base64.b64encode(opt_bytes).decode("utf-8")
 
-    prompt = """You are an expert OCR and document analysis system specialized in Algerian public procurement (Marchés Publics / الصفقات العمومية: Appels d'offres and Avis d'attribution).
-The document may be in French, Arabic, or bilingual.
-
-Analyze the scan thoroughly, including any tables, stamps, and letterheads, and extract the following in strict JSON:
-{
-  "action": "Main action verb in French (e.g. REALISATION, AMENAGEMENT, REVETEMENT, REHABILITATION, ETUDE ET SUIVI, RENOVATION) or '/'",
-  "type_projet": "Facility/project type in French (e.g. STADE, STADE COMMUNAL, STADE DE PROXIMITE, TERRAIN DE SPORT, AIRE DE JEUX, SALLE DE SPORT, GAZON SYNTHETIQUE, MATICO) or '/'",
-  "budget": "Final winning amount or estimated budget with currency. In tables, look for headers such as 'Montant', 'Montant TTC', 'Montant après correction', 'Cout de marche', 'المبلغ', 'مبلغ الصفقة', 'مبلغ العرض بعد التصحيح', 'المبلغ بكل الرسوم (دج)'. Always prioritize the final corrected TTC amount. Example: '41 907 265,75 DA' or '/' if none.",
-  "delai": "Execution delay/duration. Look for headers such as 'Délai', 'Délai d\\'exécution', 'Durée', 'مدة الانجاز', 'أجل الانجاز', 'المدة'. Standardize to format 'XX JOURS' or 'XX MOIS'. Example: '04 MOIS' or '60 JOURS' or '/' if none.",
-  "commune": "Commune (municipality) name in UPPERCASE Latin/French letters. Look at the top letterhead ('Commune de...', 'بلدية...'), project title ('à la commune de...', 'ببلدية...'), or table. Transliterate Arabic commune names to standard Algerian French spelling (e.g. 'بلدية بئرغبالو' -> 'BIRGHABALO', 'بلدية الهرانفة' -> 'HARENFA', 'بلدية الرحمانية' -> 'RAHMANIA', 'بلدية سبدو' -> 'SEBDOU', 'بلدية وادي ليلي' -> 'OUED LILLI', 'بلدية الحجيرة' -> 'HADJERA'). If not found, return '/'.",
-  "wilaya": "Wilaya name in UPPERCASE (e.g. MEDEA, CHLEF, ALGER, BOUIRA, TIARET, TLEMCEN, BATNA, TOUGGOURT) or '/'",
-  "annonceur": "Contracting authority name in French (e.g. COMMUNE, DJS DE LA WILAYA, DEP DE LA WILAYA) or '/'",
-  "entreprise_attributaire": "Winning contractor name. Look for headers such as 'Attributaire', 'Entreprise', 'Soumissionnaire retenu', 'المتعهد', 'المؤسسة الفائزة', 'اسم المؤسسة'. Return exact company name or '/' if none."
-}
-Return ONLY valid JSON."""
-
     url = "https://integrate.api.nvidia.com/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {key}",
         "Content-Type": "application/json"
     }
 
-    for model in NVIDIA_FALLBACK_MODELS:
+    for model, timeout in NVIDIA_FALLBACK_MODELS:
         payload = {
             "model": model,
             "messages": [
                 {
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": prompt},
+                        {"type": "text", "text": PROMPT_SCAN_ANALYSIS},
                         {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64_img}"}}
                     ]
                 }
@@ -344,15 +371,15 @@ Return ONLY valid JSON."""
             "temperature": 0.1
         }
         try:
-            r = requests.post(url, headers=headers, json=payload, timeout=35)
+            r = requests.post(url, headers=headers, json=payload, timeout=timeout)
             if r.status_code == 200:
                 res = r.json()
                 msg = res["choices"][0]["message"]
                 raw_text = msg.get("content") or msg.get("reasoning_content") or ""
                 data = extract_json_from_text(raw_text)
                 if data and isinstance(data, dict):
-                    log.info("NVIDIA NIM (%s) extracted -> Commune: %s | Budget: %s | Delai: %s | Attributaire: %s",
-                             model, data.get("commune"), data.get("budget"), data.get("delai"), data.get("entreprise_attributaire"))
+                    log.info("NVIDIA NIM (%s) extracted -> is_gazon: %s | Commune: %s | Budget: %s | Delai: %s | Parution AO: %s",
+                             model, data.get("is_gazon"), data.get("commune"), data.get("budget"), data.get("delai"), data.get("date_parution_ao"))
                     time.sleep(0.5)
                     return data
             elif r.status_code in (429, 503):
@@ -386,26 +413,11 @@ def analyze_scan_with_gemini(img_bytes: bytes, api_key: str | None = None) -> di
     else:
         mime = "image/jpeg"
 
-    prompt = """You are an expert OCR and document analysis system specialized in Algerian public procurement (Marchés Publics / الصفقات العمومية: Appels d'offres and Avis d'attribution).
-The document may be in French, Arabic, or bilingual.
-
-Analyze the scan thoroughly, including any tables, stamps, and letterheads, and extract the following in strict JSON:
-{
-  "action": "Main action verb in French (e.g. REALISATION, AMENAGEMENT, REVETEMENT, REHABILITATION, ETUDE ET SUIVI, RENOVATION) or '/'",
-  "type_projet": "Facility/project type in French (e.g. STADE, STADE COMMUNAL, STADE DE PROXIMITE, TERRAIN DE SPORT, AIRE DE JEUX, SALLE DE SPORT, GAZON SYNTHETIQUE, MATICO) or '/'",
-  "budget": "Final winning amount or estimated budget with currency. In tables, look for headers such as 'Montant', 'Montant TTC', 'Montant après correction', 'Cout de marche', 'المبلغ', 'مبلغ الصفقة', 'مبلغ العرض بعد التصحيح', 'المبلغ بكل الرسوم (دج)'. Always prioritize the final corrected TTC amount. Example: '41 907 265,75 DA' or '/' if none.",
-  "delai": "Execution delay/duration. Look for headers such as 'Délai', 'Délai d\\'exécution', 'Durée', 'مدة الانجاز', 'أجل الانجاز', 'المدة'. Standardize to format 'XX JOURS' or 'XX MOIS'. Example: '04 MOIS' or '60 JOURS' or '/' if none.",
-  "commune": "Commune (municipality) name in UPPERCASE Latin/French letters. Look at the top letterhead ('Commune de...', 'بلدية...'), project title ('à la commune de...', 'ببلدية...'), or table. Transliterate Arabic commune names to standard Algerian French spelling (e.g. 'بلدية بئرغبالو' -> 'BIRGHABALO', 'بلدية الهرانفة' -> 'HARENFA', 'بلدية الرحمانية' -> 'RAHMANIA', 'بلدية سبدو' -> 'SEBDOU', 'بلدية وادي ليلي' -> 'OUED LILLI', 'بلدية الحجيرة' -> 'HADJERA'). If not found, return '/'.",
-  "wilaya": "Wilaya name in UPPERCASE (e.g. MEDEA, CHLEF, ALGER, BOUIRA, TIARET, TLEMCEN, BATNA, TOUGGOURT) or '/'",
-  "annonceur": "Contracting authority name in French (e.g. COMMUNE, DJS DE LA WILAYA, DEP DE LA WILAYA) or '/'",
-  "entreprise_attributaire": "Winning contractor name. Look for headers such as 'Attributaire', 'Entreprise', 'Soumissionnaire retenu', 'المتعهد', 'المؤسسة الفائزة', 'اسم المؤسسة'. Return exact company name or '/' if none."
-}"""
-
     payload = {
         "contents": [
             {
                 "parts": [
-                    {"text": prompt},
+                    {"text": PROMPT_SCAN_ANALYSIS},
                     {"inline_data": {"mime_type": mime, "data": b64_img}}
                 ]
             }
@@ -420,8 +432,8 @@ Analyze the scan thoroughly, including any tables, stamps, and letterheads, and 
             if r.status_code == 200:
                 content = r.json()["candidates"][0]["content"]["parts"][0]["text"]
                 data = json.loads(content)
-                log.info("Gemini Vision (%s) extracted -> Commune: %s | Budget: %s | Delai: %s | Attributaire: %s",
-                         model, data.get("commune"), data.get("budget"), data.get("delai"), data.get("entreprise_attributaire"))
+                log.info("Gemini Vision (%s) extracted -> is_gazon: %s | Commune: %s | Budget: %s | Delai: %s | Parution AO: %s",
+                         model, data.get("is_gazon"), data.get("commune"), data.get("budget"), data.get("delai"), data.get("date_parution_ao"))
                 time.sleep(0.5)
                 return data
             elif r.status_code in (429, 503):
@@ -431,8 +443,8 @@ Analyze the scan thoroughly, including any tables, stamps, and letterheads, and 
                 log.warning("Gemini (%s) returned %d: %s", model, r.status_code, r.text[:120])
         except Exception as e:
             log.warning("Gemini (%s) request error (%s) -- falling back...", model, e)
-
     return {}
+
 
 def analyze_scan(img_bytes: bytes) -> dict:
     """
@@ -744,6 +756,8 @@ def append_to_gsheet(results: list[dict], notice_type: str, sheet_id: str | None
             delai = item.get("delai") or parse_delai(item.get("nbr_jours", 0), item.get("description", ""))
 
             date_col_val = dt_parution if dt_parution != "/" else today_str
+            # Col 6: Must strictly be the original AO publication date from INSIDE the text paragraph. Never the bottom date.
+            dt_parution_ao = str(item.get("date_parution_ao", "")).strip() or "/"
 
             row_data = [
                 last_num,                                # Col 1: N°
@@ -751,7 +765,7 @@ def append_to_gsheet(results: list[dict], notice_type: str, sheet_id: str | None
                 action,                                  # Col 3: TITRE D'AVIS D'ATTRIBUTION
                 1,                                       # Col 4: Nombre de projet
                 ptype,                                   # Col 5: TYPE DE PROJET
-                dt_parution,                             # Col 6: DATE DE PARUTION
+                dt_parution_ao,                          # Col 6: DATE DE PARUTION (from inside paragraph or '/')
                 dt_echeance,                             # Col 7: DATE D'ECHEANCE
                 ann_val,                                 # Col 8: ANNONCEUR
                 wilaya if wilaya else "/",               # Col 9: WILAYA
@@ -1215,9 +1229,16 @@ class AlgerieMarchesScraper:
 
         log.info("Total %s fetched (>= %s): %d", label, since_date or "all", len(all_annonces))
 
-        # Filter by domain keywords (turf/sport/playgrounds)
-        filtered = [a for a in all_annonces if KEYWORD_FILTER.search(a.get("titre", ""))]
-        log.info("After TAPIDOR keyword filter: %d matching %s", len(filtered), label)
+        # Filter by domain keywords with negative exclusions
+        initial_matches = [a for a in all_annonces if KEYWORD_FILTER.search(a.get("titre", ""))]
+        filtered = []
+        for a in initial_matches:
+            t = a.get("titre", "")
+            if NON_GAZON_EXCLUSIONS.search(t) and not GAZON_EXPLICIT_KEYWORDS.search(t):
+                log.info("  -> Pre-filter excluded non-gazon notice: %s", t[:70])
+                continue
+            filtered.append(a)
+        log.info("After TAPIDOR gazon-exclusive filter: %d matching %s", len(filtered), label)
 
         today_str = datetime.now().strftime("%Y-%m-%d")
         results = []
@@ -1279,6 +1300,12 @@ class AlgerieMarchesScraper:
                 except Exception as e:
                     log.warning("  -> AI Vision analysis error: %s", e)
 
+            # ── 2.1 Gazon Scope Gate ────────────────────────────────
+            # If AI Vision analyzed the scan and determined it's NOT a gazon project, discard it!
+            if ai_data and ai_data.get("is_gazon") is False:
+                log.info("  -> [REJECTED NON-GAZON] %s (AI confirmed no turf/gazon scope) -- Skipping.", titre[:65])
+                continue
+
             # ── 3. Merge Web Data with AI Complementary Data ────────
             wilaya_val = (
                 detail.get("wilaya")
@@ -1329,6 +1356,7 @@ class AlgerieMarchesScraper:
                 "wilaya": wilaya_val,
                 "commune": commune_val,
                 "date_parution": detail.get("date_parution") or raw_date,
+                "date_parution_ao": ai_data.get("date_parution_ao", "/"),
                 "date_echeance": detail.get("date_echeance", ""),
                 "type_annonce": notice_type,
                 "annonceur": annonceur_val,
