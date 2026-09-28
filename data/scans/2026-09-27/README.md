@@ -1,0 +1,11 @@
+# 📰 Newspaper Scans Gallery — 2026-09-27
+
+> Scans downloaded & OCR-analyzed with Gemini 2.5 Flash for TAPIDOR
+
+| N° | Ad ID | Type | Action & Facility | Wilaya | Commune | Budget | Délai | Scans |
+| :---: | :---: | :---: | :--- | :---: | :---: | :---: | :---: | :---: |
+| 1 | [81491](https://algeriemarches.com/annonces/125612-travaux-de-reamenagement-du-terrain-de-football-au-niveau-du-stade-communal-de-bordj-el-bahri) | Appel d'Offres | **TRAVAUX**<br>STADE | Alger | BORDJ EL BAHRI | 12 000 000,00 DA | 10 JOURS | [AM_81491_2026927_9280_91666_ad.jpg](81491/AM_81491_2026927_9280_91666_ad.jpg)<br>[AM_81491_2026927_9280_84298_ad.jpg](81491/AM_81491_2026927_9280_84298_ad.jpg) |
+| 2 | [81734](https://algeriemarches.com/annonces/906167-amenagement-et-rehabilitation-du-stade-de-football-a-in-salah) | Appel d'Offres | **AMÉNAGEMENT ET RÉHABILITATION**<br>STADE DE FOOTBALL | In Salah | BOUCHERIF | 10 000 000,00 DA | 03 MOIS | [AM_81734_2026927_131727_83152_ad.jpg](81734/AM_81734_2026927_131727_83152_ad.jpg) |
+| 3 | [81743](https://algeriemarches.com/annonces/994576-traitement-des-glissements-de-terrain-sur-la-route-nationale-77a-a-tamantout-n-k-1000) | Appel d'Offres | **TRAVAUX**<br>TERRAIN | Jijel | BEJAIA | 50 300 000,00 DA | 03 MOIS | [AM_81743_2026927_133438_72527_ad.jpg](81743/AM_81743_2026927_133438_72527_ad.jpg) |
+| 4 | [81708](https://algeriemarches.com/annonces/353141-travaux-dentretien-et-maintenance-des-terrains-en-gazon-naturel-hybride-carpet-du-stade-19mai1956) | Avis d'Attribution | **TRAVAUX**<br>STADE | Annaba | ANNABA | 55 000 000,00 DA | 12 MOIS | [AM_81708_2026927_123949_63438_ad.jpg](81708/AM_81708_2026927_123949_63438_ad.jpg)<br>[AM_81708_2026927_123949_26342_ad.jpg](81708/AM_81708_2026927_123949_26342_ad.jpg) |
+| 5 | [81422](https://algeriemarches.com/annonces/736989-revetement-en-gazon-synthetique-du-stade-communal-dhalaa) | Avis d'Attribution | **REVÊTEMENT**<br>STADE | Oum El Bouaghi | DHALAA | 23.799.048,00 DA | 03 MOIS | [AM_81422_2026927_8424_50426_ad.jpg](81422/AM_81422_2026927_8424_50426_ad.jpg)<br>[AM_81422_2026927_8424_86024_ad.jpg](81422/AM_81422_2026927_8424_86024_ad.jpg) |
