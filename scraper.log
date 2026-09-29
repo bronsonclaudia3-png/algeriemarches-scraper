@@ -262,3 +262,40 @@ RuntimeError: Login failed in drain round 1
 2026-09-05 12:56:51,756  INFO      Excel sync complete: 0 rows added
 2026-09-05 12:56:51,756  INFO      Saved 4 cookies to disk
 2026-09-05 12:56:51,756  INFO      Run 2026-09-05_12-56-44 done -- 1 results
+2026-09-29 18:34:28,537  INFO      NVIDIA NIM (google/diffusiongemma-26b-a4b-it) extracted -> is_gazon: False | Commune: BEJAÏA CENTRE | Budget: 10 000 000,00 DA | Delai: 03 MOIS | Parution AO: /
+2026-09-29 18:34:30,997  INFO      NVIDIA NIM (google/diffusiongemma-26b-a4b-it) extracted -> is_gazon: True | Commune: GALAMA | Budget: 75 136 600,00 DA | Delai: 03 MOIS | Parution AO: 16/09/2026
+2026-09-29 18:34:50,397  INFO      Loaded 4 cookies from disk
+2026-09-29 18:34:50,397  INFO      Have saved auth cookies, testing...
+2026-09-29 18:34:51,784  INFO      Detail test: OK (148632 bytes)
+2026-09-29 18:34:51,784  INFO      Saved session works!
+2026-09-29 18:34:51,793  INFO      Saved 4 cookies to disk
+2026-09-29 18:36:04,526  INFO      Loaded 4 cookies from disk
+2026-09-29 18:36:04,526  INFO      Have saved auth cookies, testing...
+2026-09-29 18:36:05,837  INFO      Detail test: OK (148632 bytes)
+2026-09-29 18:36:05,837  INFO      Saved session works!
+2026-09-29 18:36:05,840  INFO      Saved 4 cookies to disk
+2026-09-29 18:36:29,012  INFO      Loaded 4 cookies from disk
+2026-09-29 18:36:29,012  INFO      Have saved auth cookies, testing...
+2026-09-29 18:36:30,700  INFO      Detail test: OK (148632 bytes)
+2026-09-29 18:36:30,700  INFO      Saved session works!
+2026-09-29 18:36:30,706  INFO      Saved 4 cookies to disk
+2026-09-29 18:36:38,007  INFO      Loaded 4 cookies from disk
+2026-09-29 18:36:38,007  INFO      Have saved auth cookies, testing...
+2026-09-29 18:36:39,816  INFO      Detail test: OK (148632 bytes)
+2026-09-29 18:36:39,816  INFO      Saved session works!
+2026-09-29 18:36:39,822  INFO      Saved 4 cookies to disk
+2026-09-29 18:37:06,368  INFO      Loaded 4 cookies from disk
+2026-09-29 18:37:06,369  INFO      Have saved auth cookies, testing...
+2026-09-29 18:37:08,493  INFO      Detail test: OK (148632 bytes)
+2026-09-29 18:37:08,493  INFO      Saved session works!
+2026-09-29 18:37:08,495  INFO      Saved 4 cookies to disk
+2026-09-29 18:38:29,096  INFO      Loaded 4 cookies from disk
+2026-09-29 18:38:29,096  INFO      Have saved auth cookies, testing...
+2026-09-29 18:38:30,553  INFO      Detail test: OK (148632 bytes)
+2026-09-29 18:38:30,553  INFO      Saved session works!
+2026-09-29 18:38:30,555  INFO      Saved 4 cookies to disk
+2026-09-29 18:39:20,970  INFO      Loaded 4 cookies from disk
+2026-09-29 18:39:20,970  INFO      Have saved auth cookies, testing...
+2026-09-29 18:39:22,521  INFO      Detail test: OK (148632 bytes)
+2026-09-29 18:39:22,521  INFO      Saved session works!
+2026-09-29 18:39:22,523  INFO      Saved 4 cookies to disk

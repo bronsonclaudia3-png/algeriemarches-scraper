@@ -84,7 +84,7 @@ ACTIVE_KEYWORDS = KEYWORDS_ENV if KEYWORDS_ENV else DEFAULT_KEYWORDS
 KEYWORD_FILTER = re.compile(ACTIVE_KEYWORDS, re.IGNORECASE)
 
 GAZON_EXPLICIT_KEYWORDS = re.compile(
-    r"\b(?:gazon|pelouse|engazonnement|عشب|تعشيب|نجيل|نجيلة|gazonné|gazonne|gazonnee|تكسية\s+اصطناعية)\b",
+    r"\b(?:gazon|pelouse|engazonnement|engazonner|عشب|تعشيب|نجيل|نجيلة|gazonné|gazonne|gazonnee|تكسية\s+اصطناعية|تكسية\s+بالعشب|عشب\s+اصطناعي|عشب\s+طبيعي)\b",
     re.IGNORECASE
 )
 
@@ -94,7 +94,9 @@ NON_GAZON_EXCLUSIONS = re.compile(
     r"mobilier|bureau|fourniture\s+de\s+bureau|fournitures\s+de\s+bureau|عتاد\s+مكتبي|أثاث|اثاث|طباعة|"
     r"assiette\s+de\s+terrain|assiette\s+fonciere|assiette\s+foncière|logement|logements|aadl|lpp|lpa|pos|viabilisation|geotechnique|géotechnique|"
     r"assainissement|assainisement|aep|drainage|cantine|salle\s+omnisport|salle\s+de\s+sport|piscine|"
-    r"véhicule|véhicules|vehicule|vehicules|trémie|tremie|gradin|gradins)\b",
+    r"véhicule|véhicules|vehicule|vehicules|trémie|tremie|gradin|gradins|"
+    r"glissement|glissements|route\s+nationale|chemin\s+communal|chemins\s+communaux|ouvrage\s+d'art|pont|ponts|voie|voirie|trottoir|trottoirs|"
+    r"psychop[eé]dagogique|handicap[eé]|handicap[eé]s)\b",
     re.IGNORECASE
 )
 
@@ -267,17 +269,26 @@ NVIDIA_FALLBACK_MODELS = [
 ]
 
 
-PROMPT_SCAN_ANALYSIS = """You are an expert document analysis and OCR system specialized in Algerian public procurement (Marchés Publics / الصفقات العمومية) for TAPIDOR, a company specializing exclusively in GAZON (artificial turf / pelouse synthétique / engazonnement / sports turf / تكسية اصطناعية للملاعب).
+PROMPT_SCAN_ANALYSIS = """You are an expert document analysis and OCR system specialized in Algerian public procurement (Marchés Publics / الصفقات العمومية) for TAPIDOR, a company specializing EXCLUSIVELY in SPORTS TURF (gazon synthétique / pelouse synthétique / engazonnement / عشب اصطناعي / تعشيب / تكسية بالعشب الاصطناعي).
 The document may be in French, Arabic, or bilingual.
 
-CRITICAL REQUIREMENT (GAZON SCOPE FILTER):
-Determine whether this project specifically involves GAZON (artificial turf / pelouse synthétique / engazonnement / natural sports turf / تكسية اصطناعية لملعب / تعشيب / عشب اصطناعي).
-If the project is NOT about sports turf/gazon (for example: it is civil works, building construction, concrete or asphalt paving without turf, indoor sports halls without turf, heating, office furniture, geotechnical study, housing, sanitation/sewerage, electrical works):
-Set "is_gazon": false.
-Only set "is_gazon": true if the project explicitly involves GAZON / PELOUSE / ENGAZONNEMENT / SPORTS STADIUM SYNTHETIC TURF (e.g. fourniture et pose de gazon synthétique, engazonnement de terrain/stade, revêtement en gazon synthétique / تغطية بالعشب الاصطناعي / تعشيب / تجديد التكسية الاصطناعية لملعب).
+CRITICAL REQUIREMENT (STRICT GAZON / TURF SCOPE ONLY):
+TAPIDOR only works on GAZON / TURF projects.
+WARNING: A project is NOT gazon simply because it mentions 'stade', 'terrain de sport', 'ملعب', 'aire de jeux', 'complexe sportif', 'peinture', 'éclairage', 'clôture', 'gradins', or 'aménagement de centre'.
+Many Algerian tenders are for civil masonry, school rehabilitation, roadworks, or concrete/asphalt/MATICO multi-sports grounds WITHOUT ANY TURF.
+
+STRICT RULE:
+Only set "is_gazon": true if the document, title, lots, or award table EXPLICITLY mentions:
+- GAZON (synthétique ou naturel)
+- PELOUSE (synthétique ou naturelle)
+- ENGAZONNEMENT / ENGAZONNER
+- REVÊTEMENT EN GAZON / POSE DE GAZON
+- عشب اصطناعي / عشب طبيعي / تعشيب / تكسية بالعشب الاصطناعي / تكسية اصطناعية لملعب
+If the project does NOT explicitly mention gazon/pelouse/turf (e.g. it is general construction, roadworks/glissement, fencing, civil works, or just 'aménagement/réhabilitation de stade/terrain/centre' without turf):
+You MUST set "is_gazon": false!
 
 DATE DE PARUTION REQUIREMENT (FOR AVIS D'ATTRIBUTION):
-Extract "date_parution_ao" strictly from INSIDE the text paragraph (where it mentions when the original Appel d'Offres was published, e.g. 'paru le 22/07/2026' or 'الصادرة بتاريخ 2026/07/22').
+Extract "date_parution_ao" strictly from INSIDE the text paragraph (where it mentions when the original Appel d'Offres was published in newspapers, e.g. 'paru le 22/07/2026' or 'الصادرة بتاريخ 2026/07/22').
 If NO publication date is mentioned in the paragraph text, return '/'.
 NEVER use the newspaper print date or footer date at the very bottom (such as 'An-Nasr 21-9-2026', ANEP footer, or 'El-Moudjahid 22-09-2026').
 
@@ -285,7 +296,7 @@ Extract the following in strict JSON:
 {
   "is_gazon": true or false,
   "action": "Main action verb in French (e.g. REALISATION, AMENAGEMENT, REVETEMENT, REHABILITATION, REFECTION) or '/'",
-  "type_projet": "Facility type in French (e.g. STADE, STADE COMMUNAL, STADE DE PROXIMITE, TERRAIN DE SPORT, GAZON SYNTHETIQUE) or '/'",
+  "type_projet": "Facility type in French (e.g. STADE, STADE COMMUNAL, STADE DE PROXIMITE, AIRE DE JEUX, TERRAIN DE SPORT) or '/'",
   "budget": "Final winning amount or estimated budget with currency. Prioritize final corrected TTC amount. Example: '37 756 320,00 DA' or '/' if none.",
   "delai": "Execution delay. Format 'XX JOURS' or 'XX MOIS'. Example: '03 MOIS' or '60 JOURS' or '/' if none.",
   "commune": "Commune (municipality) name in UPPERCASE Latin/French letters or '/'",
@@ -1240,15 +1251,25 @@ class AlgerieMarchesScraper:
 
         log.info("Total %s fetched (>= %s): %d", label, since_date or "all", len(all_annonces))
 
-        # Filter by domain keywords with negative exclusions
-        initial_matches = [a for a in all_annonces if KEYWORD_FILTER.search(a.get("titre", ""))]
+        # Filter by domain keywords (titre + description) with negative exclusions
         filtered = []
-        for a in initial_matches:
-            t = a.get("titre", "")
-            if NON_GAZON_EXCLUSIONS.search(t) and not GAZON_EXPLICIT_KEYWORDS.search(t):
+        for a in all_annonces:
+            t = str(a.get("titre") or "")
+            d = str(a.get("description") or "")
+            combined = f"{t} {d}".strip()
+
+            if not KEYWORD_FILTER.search(combined):
+                continue
+
+            # If explicit gazon keyword in title or description, always include!
+            if GAZON_EXPLICIT_KEYWORDS.search(combined):
+                filtered.append(a)
+            # If matched general keywords (stade, terrain, etc.) but has exclusions, skip!
+            elif NON_GAZON_EXCLUSIONS.search(combined):
                 log.info("  -> Pre-filter excluded non-gazon notice: %s", t[:70])
                 continue
-            filtered.append(a)
+            else:
+                filtered.append(a)
         log.info("After TAPIDOR gazon-exclusive filter: %d matching %s", len(filtered), label)
 
         today_str = datetime.now().strftime("%Y-%m-%d")
@@ -1312,9 +1333,16 @@ class AlgerieMarchesScraper:
                     log.warning("  -> AI Vision analysis error: %s", e)
 
             # ── 2.1 Gazon Scope Gate ────────────────────────────────
-            # If AI Vision analyzed the scan and determined it's NOT a gazon project, discard it!
+            combined_text = f"{titre} {detail.get('description', '')} {a.get('description', '')}"
+            has_explicit_gazon = bool(GAZON_EXPLICIT_KEYWORDS.search(combined_text))
+
             if ai_data and ai_data.get("is_gazon") is False:
                 log.info("  -> [REJECTED NON-GAZON] %s (AI confirmed no turf/gazon scope) -- Skipping.", titre[:65])
+                continue
+
+            # If notice had generic terms ('stade', 'terrain') but neither explicit gazon text nor AI positive confirmation, skip it!
+            if not has_explicit_gazon and (not ai_data or ai_data.get("is_gazon") is not True):
+                log.info("  -> [REJECTED NON-GAZON] %s (Generic notice without turf confirmation) -- Skipping.", titre[:65])
                 continue
 
             # ── 3. Merge Web Data with AI Complementary Data ────────
