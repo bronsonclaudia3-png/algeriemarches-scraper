@@ -16,6 +16,7 @@ import json
 import logging
 import os
 import re
+import shutil
 import sys
 import time
 import unicodedata
@@ -263,9 +264,9 @@ def parse_date(date_val):
 
 NVIDIA_MODEL = "google/diffusiongemma-26b-a4b-it"
 NVIDIA_FALLBACK_MODELS = [
-    ("google/diffusiongemma-26b-a4b-it", 30),
-    ("z-ai/glm-5.3-flash", 15),
-    ("moonshotai/kimi-k3", 15),
+    ("google/diffusiongemma-26b-a4b-it", 45),
+    ("z-ai/glm-5.3-flash", 40),
+    ("moonshotai/kimi-k3", 40),
 ]
 
 
@@ -285,7 +286,7 @@ Only set "is_gazon": true if the document, title, lots, or award table EXPLICITL
 - REVÊTEMENT EN GAZON / POSE DE GAZON
 - عشب اصطناعي / عشب طبيعي / تعشيب / تكسية بالعشب الاصطناعي / تكسية اصطناعية لملعب
 If the project does NOT explicitly mention gazon/pelouse/turf (e.g. it is general construction, roadworks/glissement, fencing, civil works, or just 'aménagement/réhabilitation de stade/terrain/centre' without turf):
-You MUST set "is_gazon": false!
+You MUST set "is_gazon": false and "gazon_mention": "NONE"!
 
 DATE DE PARUTION REQUIREMENT (FOR AVIS D'ATTRIBUTION):
 Extract "date_parution_ao" strictly from INSIDE the text paragraph (where it mentions when the original Appel d'Offres was published in newspapers, e.g. 'paru le 22/07/2026' or 'الصادرة بتاريخ 2026/07/22').
@@ -295,6 +296,7 @@ NEVER use the newspaper print date or footer date at the very bottom (such as 'A
 Extract the following in strict JSON:
 {
   "is_gazon": true or false,
+  "gazon_mention": "Exact verbatim quote or phrase from the document mentioning gazon/pelouse/turf/عشب/تعشيب, or 'NONE' if not present.",
   "action": "Main action verb in French (e.g. REALISATION, AMENAGEMENT, REVETEMENT, REHABILITATION, REFECTION) or '/'",
   "type_projet": "Facility type in French (e.g. STADE, STADE COMMUNAL, STADE DE PROXIMITE, AIRE DE JEUX, TERRAIN DE SPORT) or '/'",
   "budget": "Final winning amount or estimated budget with currency. Prioritize final corrected TTC amount. Example: '37 756 320,00 DA' or '/' if none.",
@@ -663,14 +665,16 @@ def append_to_gsheet(results: list[dict], notice_type: str, sheet_id: str | None
 
     try:
         all_values = target_ws.get_all_values()
+        all_formulas = target_ws.get_all_values(value_render_option="FORMULA")
     except Exception as e:
         log.error("Failed to read values from Google Sheet: %s", e)
         return 0
 
     last_num = 0
     existing_items = set()
+    existing_ad_ids = set()
 
-    for idx, row in enumerate(all_values):
+    for idx, (row, frow) in enumerate(zip(all_values, all_formulas)):
         if idx < 3: # Skip title & header rows
             continue
         if row and len(row) > 0 and str(row[0]).strip():
@@ -680,24 +684,39 @@ def append_to_gsheet(results: list[dict], notice_type: str, sheet_id: str | None
                     last_num = n
             except Exception:
                 pass
+
+            # Extract any 5-6 digit notice IDs from formulas and values
+            for cell in list(row) + list(frow):
+                for mid in re.findall(r'/(\d{5,6})(?:/|"|\.|$)', str(cell)):
+                    existing_ad_ids.add(mid)
+
             if notice_type == "appels-doffres":
                 action = row[2].strip().upper() if len(row) > 2 else ""
                 t_proj = row[4].strip().upper() if len(row) > 4 else ""
                 wilaya = row[8].strip().upper() if len(row) > 8 else ""
                 commune = row[9].strip().upper() if len(row) > 9 else ""
                 existing_items.add((action, t_proj, wilaya, commune))
+                norm_w = re.sub(r"[^A-Z0-9]", "", strip_accents(wilaya).upper())
+                norm_c = re.sub(r"[^A-Z0-9]", "", strip_accents(commune).upper())
+                if norm_w and norm_c:
+                    existing_items.add(("NORM_LOC", norm_w, norm_c))
             else:
                 attr_par = row[12].strip().upper() if len(row) > 12 else ""
                 wilaya = row[8].strip().upper() if len(row) > 8 else ""
                 t_proj = row[4].strip().upper() if len(row) > 4 else ""
                 action = row[2].strip().upper() if len(row) > 2 else ""
                 commune = row[9].strip().upper() if len(row) > 9 else ""
+                montant_cell = str(row[10]).strip() if len(row) > 10 else ""
                 if attr_par:
                     existing_items.add((attr_par, wilaya, t_proj))
                 if action and t_proj and wilaya:
                     existing_items.add(("ALT", action, t_proj, wilaya, commune))
+                norm_w = re.sub(r"[^A-Z0-9]", "", strip_accents(wilaya).upper())
+                norm_c = re.sub(r"[^A-Z0-9]", "", strip_accents(commune).upper())
+                if norm_w and norm_c:
+                    existing_items.add(("NORM_LOC", norm_w, norm_c, montant_cell))
 
-    log.info("Google Sheet '%s' has %d rows (last N°: %d)", target_ws.title, len(all_values) - 3, last_num)
+    log.info("Google Sheet '%s' has %d rows (last N°: %d, tracked IDs: %d)", target_ws.title, len(all_values) - 3, last_num, len(existing_ad_ids))
 
     rows_to_append = []
     today_str = datetime.now().strftime("%Y-%m-%d")
@@ -715,6 +734,12 @@ def append_to_gsheet(results: list[dict], notice_type: str, sheet_id: str | None
         dt_echeance = str(item.get("date_echeance", ""))[:10] or "/"
 
         ann_id = str(item.get("id", "") or item.get("id_annonce", "")).strip()
+
+        # ── Primary deduplication by Notice ID ──
+        if ann_id and ann_id in existing_ad_ids:
+            log.info("  Notice ID %s already in Google Sheet '%s' -- skipping duplicate!", ann_id, target_ws.title)
+            continue
+
         scans_list = item.get("scans", [])
         if scans_list and ann_id and dt_parution != "/":
             scan_names = [Path(s).name for s in scans_list]
@@ -726,14 +751,22 @@ def append_to_gsheet(results: list[dict], notice_type: str, sheet_id: str | None
         else:
             scan_link = "/"
 
+        norm_w = re.sub(r"[^A-Z0-9]", "", strip_accents(wilaya).upper())
+        norm_c = re.sub(r"[^A-Z0-9]", "", strip_accents(commune).upper())
+
         if notice_type == "appels-doffres":
             dedup_key = (action.upper(), ptype.upper(), wilaya, commune.upper())
-            if dedup_key in existing_items:
+            norm_loc = ("NORM_LOC", norm_w, norm_c) if (norm_w and norm_c) else None
+            if dedup_key in existing_items or (norm_loc and norm_loc in existing_items):
                 log.info("  Already in Google Sheet (AO): %s | %s (%s)", action, ptype, wilaya)
                 continue
 
             last_num += 1
             existing_items.add(dedup_key)
+            if norm_loc:
+                existing_items.add(norm_loc)
+            if ann_id:
+                existing_ad_ids.add(ann_id)
 
             date_col_val = dt_parution if dt_parution != "/" else today_str
 
@@ -754,9 +787,12 @@ def append_to_gsheet(results: list[dict], notice_type: str, sheet_id: str | None
             rows_to_append.append(row_data)
         else:
             attr_par = item.get("entreprise_concernee", "").strip()
+            budget = parse_budget(item.get("montant", "")) if item.get("montant") else "/"
             dedup_key = (attr_par.upper(), wilaya, ptype.upper())
             dedup_key_alt = ("ALT", action.upper(), ptype.upper(), wilaya, commune.upper())
-            if (attr_par != "" and dedup_key in existing_items) or (dedup_key_alt in existing_items):
+            norm_loc = ("NORM_LOC", norm_w, norm_c, str(budget).strip()) if (norm_w and norm_c) else None
+
+            if (attr_par != "" and dedup_key in existing_items) or (dedup_key_alt in existing_items) or (norm_loc and norm_loc in existing_items):
                 log.info("  Already in Google Sheet (AA): %s (%s)", attr_par[:30], wilaya)
                 continue
 
@@ -764,8 +800,11 @@ def append_to_gsheet(results: list[dict], notice_type: str, sheet_id: str | None
             if attr_par:
                 existing_items.add(dedup_key)
             existing_items.add(dedup_key_alt)
+            if norm_loc:
+                existing_items.add(norm_loc)
+            if ann_id:
+                existing_ad_ids.add(ann_id)
 
-            budget = parse_budget(item.get("montant", "")) if item.get("montant") else "/"
             delai = item.get("delai") or parse_delai(item.get("nbr_jours", 0), item.get("description", ""))
 
             date_col_val = dt_parution if dt_parution != "/" else today_str
@@ -1336,13 +1375,24 @@ class AlgerieMarchesScraper:
             combined_text = f"{titre} {detail.get('description', '')} {a.get('description', '')}"
             has_explicit_gazon = bool(GAZON_EXPLICIT_KEYWORDS.search(combined_text))
 
+            gazon_mention = str(ai_data.get("gazon_mention", "")).strip() if ai_data else ""
+            ai_has_explicit_evidence = bool(
+                gazon_mention
+                and gazon_mention.upper() != "NONE"
+                and GAZON_EXPLICIT_KEYWORDS.search(gazon_mention)
+            )
+
             if ai_data and ai_data.get("is_gazon") is False:
                 log.info("  -> [REJECTED NON-GAZON] %s (AI confirmed no turf/gazon scope) -- Skipping.", titre[:65])
+                if ad_scan_dir.exists():
+                    shutil.rmtree(ad_scan_dir, ignore_errors=True)
                 continue
 
-            # If notice had generic terms ('stade', 'terrain') but neither explicit gazon text nor AI positive confirmation, skip it!
-            if not has_explicit_gazon and (not ai_data or ai_data.get("is_gazon") is not True):
-                log.info("  -> [REJECTED NON-GAZON] %s (Generic notice without turf confirmation) -- Skipping.", titre[:65])
+            # If notice had generic terms ('stade', 'terrain') but neither explicit gazon in text nor AI positive evidence in scan, skip it!
+            if not has_explicit_gazon and not ai_has_explicit_evidence:
+                log.info("  -> [REJECTED NON-GAZON] %s (No explicit gazon/turf evidence in text or scan) -- Skipping.", titre[:65])
+                if ad_scan_dir.exists():
+                    shutil.rmtree(ad_scan_dir, ignore_errors=True)
                 continue
 
             # ── 3. Merge Web Data with AI Complementary Data ────────
