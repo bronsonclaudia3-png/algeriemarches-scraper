@@ -79,7 +79,11 @@ PAGE_SIZE = 20
 MAX_PAGES = 15
 
 # Sport & turf keywords for TAPIDOR (Exclusive Gazon Scope)
-DEFAULT_KEYWORDS = r"\b(?:gazon|pelouse|engazonnement|عشب|تعشيب|نجيل|نجيلة|stade|terrain|football|sport)\b"
+DEFAULT_KEYWORDS = (
+    r"\b(?:gazon|pelouse|engazonnement|عشب|تعشيب|نجيل|نجيلة|stade|football|sport|"
+    r"terrain\s+(?:de\s+)?(?:sport|football|proximit[eé]|omnisport|multisport|combin[eé])|"
+    r"terrains\s+(?:de\s+)?(?:sport|football|proximit[eé]|omnisport|multisport|combin[eé]))\b"
+)
 KEYWORDS_ENV = os.getenv("AM_KEYWORDS", "").strip()
 ACTIVE_KEYWORDS = KEYWORDS_ENV if KEYWORDS_ENV else DEFAULT_KEYWORDS
 KEYWORD_FILTER = re.compile(ACTIVE_KEYWORDS, re.IGNORECASE)
@@ -97,6 +101,11 @@ NON_GAZON_EXCLUSIONS = re.compile(
     r"assainissement|assainisement|aep|drainage|cantine|salle\s+omnisport|salle\s+de\s+sport|piscine|"
     r"véhicule|véhicules|vehicule|vehicules|trémie|tremie|gradin|gradins|"
     r"glissement|glissements|route\s+nationale|chemin\s+communal|chemins\s+communaux|ouvrage\s+d'art|pont|ponts|voie|voirie|trottoir|trottoirs|"
+    r"piste\s+d['’]atterrissage|a[eé]roport|a[eé]rodrome|aviation|bombardier|atterrissage|avion|vol|"
+    r"incendie|incendies|for[eê]t|for[eê]ts|boisement|reboisement|"
+    r"barrage|retenue\s+collinaire|forage|ch[aâ]teau\s+d['’]eau|hydraulique|"
+    r"port|ports|maritime|p[eê]che|"
+    r"routes?|autoroutes?|d[eé]viation|tranch[eé]e|rev[eê]tement\s+en\s+enrob[eé]|enrob[eé]|enrob[eé]s|bicouche|tricouche|"
     r"psychop[eé]dagogique|handicap[eé]|handicap[eé]s)\b",
     re.IGNORECASE
 )
@@ -289,13 +298,17 @@ If the project does NOT explicitly mention gazon/pelouse/turf (e.g. it is genera
 You MUST set "is_gazon": false and "gazon_mention": "NONE"!
 
 DATE DE PARUTION REQUIREMENT (FOR AVIS D'ATTRIBUTION):
-Extract "date_parution_ao" strictly from INSIDE the text paragraph (where it mentions when the original Appel d'Offres was published in newspapers, e.g. 'paru le 22/07/2026' or 'الصادرة بتاريخ 2026/07/22').
-If NO publication date is mentioned in the paragraph text, return '/'.
-NEVER use the newspaper print date or footer date at the very bottom (such as 'An-Nasr 21-9-2026', ANEP footer, or 'El-Moudjahid 22-09-2026').
+Extract "date_parution_ao" ONLY if the text explicitly states the date when the original Appel d'Offres was published in national newspapers (e.g. 'paru dans les journaux le DD/MM/2026' or 'الصادرة بتاريخ 2026/MM/DD في جريدة ...').
+Format: DD/MM/YYYY.
+CRITICAL WARNING - NEVER INVENT A DATE:
+If no newspaper publication date is explicitly mentioned in the text (such as for consultations / استشارة, or direct awards), you MUST set "date_parution_ao": "/".
+NEVER use the newspaper print date or footer date at the very bottom (such as 'An-Nasr 21-9-2026', ANEP footer, or 'El-Moudjahid').
+NEVER use dates from decrees (e.g. 2015, 2023), dates of consultation, or date of bid opening.
 
 Extract the following in strict JSON:
 {
   "is_gazon": true or false,
+  "objet_marche": "Verbatim title or project operation object from the document in French or Arabic (e.g. 'Revêtement en gazon synthétique du stade...')",
   "gazon_mention": "Exact verbatim quote or phrase from the document mentioning gazon/pelouse/turf/عشب/تعشيب, or 'NONE' if not present.",
   "action": "Main action verb in French (e.g. REALISATION, AMENAGEMENT, REVETEMENT, REHABILITATION, REFECTION) or '/'",
   "type_projet": "Facility type in French (e.g. STADE, STADE COMMUNAL, STADE DE PROXIMITE, AIRE DE JEUX, TERRAIN DE SPORT) or '/'",
@@ -670,6 +683,14 @@ def append_to_gsheet(results: list[dict], notice_type: str, sheet_id: str | None
         log.error("Failed to read values from Google Sheet: %s", e)
         return 0
 
+    # Determine column offset (e.g. if sheet has empty leading columns like Col A, B in APPEL D'OFFRE)
+    header_row = all_values[2] if len(all_values) > 2 else []
+    col_offset = 0
+    for c_idx, cell in enumerate(header_row):
+        if "N°" in str(cell).upper() or str(cell).strip().upper() == "N°":
+            col_offset = c_idx
+            break
+
     last_num = 0
     existing_items = set()
     existing_ad_ids = set()
@@ -677,44 +698,46 @@ def append_to_gsheet(results: list[dict], notice_type: str, sheet_id: str | None
     for idx, (row, frow) in enumerate(zip(all_values, all_formulas)):
         if idx < 3: # Skip title & header rows
             continue
-        if row and len(row) > 0 and str(row[0]).strip():
+
+        # Extract any 5-6 digit notice IDs from formulas and values across all cells
+        for cell in list(row) + list(frow):
+            for mid in re.findall(r'/(\d{5,6})(?:/|"|\.|$)', str(cell)):
+                existing_ad_ids.add(mid)
+
+        num_val = str(row[col_offset]).strip() if len(row) > col_offset else ""
+        if num_val:
             try:
-                n = int(str(row[0]).strip())
+                n = int(num_val)
                 if n > last_num:
                     last_num = n
             except Exception:
                 pass
 
-            # Extract any 5-6 digit notice IDs from formulas and values
-            for cell in list(row) + list(frow):
-                for mid in re.findall(r'/(\d{5,6})(?:/|"|\.|$)', str(cell)):
-                    existing_ad_ids.add(mid)
-
-            if notice_type == "appels-doffres":
-                action = row[2].strip().upper() if len(row) > 2 else ""
-                t_proj = row[4].strip().upper() if len(row) > 4 else ""
-                wilaya = row[8].strip().upper() if len(row) > 8 else ""
-                commune = row[9].strip().upper() if len(row) > 9 else ""
-                existing_items.add((action, t_proj, wilaya, commune))
-                norm_w = re.sub(r"[^A-Z0-9]", "", strip_accents(wilaya).upper())
-                norm_c = re.sub(r"[^A-Z0-9]", "", strip_accents(commune).upper())
-                if norm_w and norm_c:
-                    existing_items.add(("NORM_LOC", norm_w, norm_c))
-            else:
-                attr_par = row[12].strip().upper() if len(row) > 12 else ""
-                wilaya = row[8].strip().upper() if len(row) > 8 else ""
-                t_proj = row[4].strip().upper() if len(row) > 4 else ""
-                action = row[2].strip().upper() if len(row) > 2 else ""
-                commune = row[9].strip().upper() if len(row) > 9 else ""
-                montant_cell = str(row[10]).strip() if len(row) > 10 else ""
-                if attr_par:
-                    existing_items.add((attr_par, wilaya, t_proj))
-                if action and t_proj and wilaya:
-                    existing_items.add(("ALT", action, t_proj, wilaya, commune))
-                norm_w = re.sub(r"[^A-Z0-9]", "", strip_accents(wilaya).upper())
-                norm_c = re.sub(r"[^A-Z0-9]", "", strip_accents(commune).upper())
-                if norm_w and norm_c:
-                    existing_items.add(("NORM_LOC", norm_w, norm_c, montant_cell))
+        if notice_type == "appels-doffres":
+            action = row[col_offset + 2].strip().upper() if len(row) > col_offset + 2 else ""
+            t_proj = row[col_offset + 4].strip().upper() if len(row) > col_offset + 4 else ""
+            wilaya = row[col_offset + 8].strip().upper() if len(row) > col_offset + 8 else ""
+            commune = row[col_offset + 9].strip().upper() if len(row) > col_offset + 9 else ""
+            existing_items.add((action, t_proj, wilaya, commune))
+            norm_w = re.sub(r"[^A-Z0-9]", "", strip_accents(wilaya).upper())
+            norm_c = re.sub(r"[^A-Z0-9]", "", strip_accents(commune).upper())
+            if norm_w and norm_c:
+                existing_items.add(("NORM_LOC", norm_w, norm_c))
+        else:
+            attr_par = row[col_offset + 12].strip().upper() if len(row) > col_offset + 12 else ""
+            wilaya = row[col_offset + 8].strip().upper() if len(row) > col_offset + 8 else ""
+            t_proj = row[col_offset + 4].strip().upper() if len(row) > col_offset + 4 else ""
+            action = row[col_offset + 2].strip().upper() if len(row) > col_offset + 2 else ""
+            commune = row[col_offset + 9].strip().upper() if len(row) > col_offset + 9 else ""
+            montant_cell = str(row[col_offset + 11]).strip() if len(row) > col_offset + 11 else ""
+            if attr_par:
+                existing_items.add((attr_par, wilaya, t_proj))
+            if action and t_proj and wilaya:
+                existing_items.add(("ALT", action, t_proj, wilaya, commune))
+            norm_w = re.sub(r"[^A-Z0-9]", "", strip_accents(wilaya).upper())
+            norm_c = re.sub(r"[^A-Z0-9]", "", strip_accents(commune).upper())
+            if norm_w and norm_c:
+                existing_items.add(("NORM_LOC", norm_w, norm_c, montant_cell))
 
     log.info("Google Sheet '%s' has %d rows (last N°: %d, tracked IDs: %d)", target_ws.title, len(all_values) - 3, last_num, len(existing_ad_ids))
 
@@ -770,7 +793,7 @@ def append_to_gsheet(results: list[dict], notice_type: str, sheet_id: str | None
 
             date_col_val = dt_parution if dt_parution != "/" else today_str
 
-            row_data = [
+            row_data = ([''] * col_offset) + [
                 last_num,                                # Col 1: N°
                 date_col_val,                            # Col 2: DATE (aligns with publication date)
                 action,                                  # Col 3: TITRE D'APPEL D'OFFRE
@@ -810,8 +833,17 @@ def append_to_gsheet(results: list[dict], notice_type: str, sheet_id: str | None
             date_col_val = dt_parution if dt_parution != "/" else today_str
             # Col 6: Must strictly be the original AO publication date from INSIDE the text paragraph. Never the bottom date.
             dt_parution_ao = str(item.get("date_parution_ao", "")).strip() or "/"
+            if dt_parution_ao != "/":
+                ym = re.search(r'\b(20\d{2})\b', dt_parution_ao)
+                if ym:
+                    y = int(ym.group(1))
+                    if y < 2025 or y > 2026:
+                        log.warning("Discarding invented/invalid date_parution_ao '%s' (year %d)", dt_parution_ao, y)
+                        dt_parution_ao = "/"
+                else:
+                    dt_parution_ao = "/"
 
-            row_data = [
+            row_data = ([''] * col_offset) + [
                 last_num,                                # Col 1: N°
                 date_col_val,                            # Col 2: DATE (aligns with publication date)
                 action,                                  # Col 3: TITRE D'AVIS D'ATTRIBUTION
