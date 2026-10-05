@@ -271,11 +271,10 @@ def parse_date(date_val):
 
 # ── AI Scan Vision (NVIDIA NIM / DeepSeek OCR) ────────────────────────────────
 
-NVIDIA_MODEL = "google/diffusiongemma-26b-a4b-it"
+NVIDIA_MODEL = "z-ai/glm-5.3-flash"
 NVIDIA_FALLBACK_MODELS = [
-    ("google/diffusiongemma-26b-a4b-it", 45),
-    ("z-ai/glm-5.3-flash", 40),
-    ("moonshotai/kimi-k3", 40),
+    ("z-ai/glm-5.3-flash", 25),
+    ("moonshotai/kimi-k3", 25),
 ]
 
 
@@ -421,11 +420,10 @@ def analyze_scan_with_nvidia(img_bytes: bytes, api_key: str | None = None) -> di
     return {}
 
 GEMINI_MODELS = [
-    "gemini-3.5-flash-lite",
-    "gemini-flash-latest",
-    "gemini-3.5-flash",
-    "gemini-3.6-flash",
     "gemini-2.5-flash",
+    "gemini-2.0-flash",
+    "gemini-1.5-flash",
+    "gemini-flash-latest",
 ]
 
 def analyze_scan_with_gemini(img_bytes: bytes, api_key: str | None = None) -> dict:
@@ -733,10 +731,10 @@ def append_to_gsheet(results: list[dict], notice_type: str, sheet_id: str | None
             if attr_par:
                 existing_items.add((attr_par, wilaya, t_proj))
             if action and t_proj and wilaya:
-                existing_items.add(("ALT", action, t_proj, wilaya, commune))
+                existing_items.add(("ALT", action, t_proj, wilaya, commune, montant_cell))
             norm_w = re.sub(r"[^A-Z0-9]", "", strip_accents(wilaya).upper())
             norm_c = re.sub(r"[^A-Z0-9]", "", strip_accents(commune).upper())
-            if norm_w and norm_c:
+            if norm_w and norm_c and montant_cell and montant_cell != "/":
                 existing_items.add(("NORM_LOC", norm_w, norm_c, montant_cell))
 
     log.info("Google Sheet '%s' has %d rows (last N°: %d, tracked IDs: %d)", target_ws.title, len(all_values) - 3, last_num, len(existing_ad_ids))
@@ -812,11 +810,21 @@ def append_to_gsheet(results: list[dict], notice_type: str, sheet_id: str | None
             attr_par = item.get("entreprise_concernee", "").strip()
             budget = parse_budget(item.get("montant", "")) if item.get("montant") else "/"
             dedup_key = (attr_par.upper(), wilaya, ptype.upper())
-            dedup_key_alt = ("ALT", action.upper(), ptype.upper(), wilaya, commune.upper())
-            norm_loc = ("NORM_LOC", norm_w, norm_c, str(budget).strip()) if (norm_w and norm_c) else None
+            dedup_key_alt = ("ALT", action.upper(), ptype.upper(), wilaya, commune.upper(), str(budget).strip())
+            norm_loc = ("NORM_LOC", norm_w, norm_c, str(budget).strip()) if (norm_w and norm_c and str(budget).strip() != "/") else None
 
-            if (attr_par != "" and dedup_key in existing_items) or (dedup_key_alt in existing_items) or (norm_loc and norm_loc in existing_items):
-                log.info("  Already in Google Sheet (AA): %s (%s)", attr_par[:30], wilaya)
+            is_dup = False
+            if attr_par != "" and dedup_key in existing_items:
+                is_dup = True
+            elif dedup_key_alt in existing_items and str(budget).strip() != "/":
+                is_dup = True
+            elif norm_loc and norm_loc in existing_items:
+                is_dup = True
+            elif str(budget).strip() == "/" and attr_par == "" and ("ALT", action.upper(), ptype.upper(), wilaya, commune.upper(), "/") in existing_items:
+                is_dup = True
+
+            if is_dup:
+                log.info("  Already in Google Sheet (AA): %s (%s, budget: %s)", attr_par[:30] or commune, wilaya, budget)
                 continue
 
             last_num += 1
@@ -1289,7 +1297,16 @@ class AlgerieMarchesScraper:
                         if constructed not in urls:
                             urls.append(constructed)
 
-        return urls
+        # Deduplicate URLs by file basename to prevent duplicate scan processing
+        unique_urls = []
+        seen_fnames = set()
+        for u in urls:
+            fn = u.split("/")[-1].split("?")[0].lower()
+            if fn and fn not in seen_fnames:
+                seen_fnames.add(fn)
+                unique_urls.append(u)
+
+        return unique_urls
 
     def scrape_notice_type(self, notice_type: str, run_id: str, since_date: str = "") -> list[dict]:
         """Scrape either 'appels-doffres' or 'avis-attribution' with scan downloads and AI extraction."""
@@ -1380,7 +1397,7 @@ class AlgerieMarchesScraper:
                     except Exception as e:
                         log.warning("  -> Failed to download scan %s: %s", u, e)
 
-                if local_fp.exists():
+                if local_fp.exists() and local_fp not in downloaded_scans:
                     downloaded_scans.append(local_fp)
                     # Attempt Drive upload
                     if self.drive_mgr:
