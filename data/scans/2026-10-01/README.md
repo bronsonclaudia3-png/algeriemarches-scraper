@@ -1,0 +1,8 @@
+# 📰 Newspaper Scans Gallery — 2026-10-01
+
+> Scans downloaded & OCR-analyzed with Gemini 2.5 Flash for TAPIDOR
+
+| N° | Ad ID | Type | Action & Facility | Wilaya | Commune | Budget | Délai | Scans |
+| :---: | :---: | :---: | :--- | :---: | :---: | :---: | :---: | :---: |
+| 1 | [85985](https://algeriemarches.com/annonces/396189-realisation-dun-stade-de-proximite-en-gazon-synthetique) | Avis d'Attribution | **RÉALISATION**<br>STADE DE PROXIMITÉ | Relizane | EL HASSI | 11.888.235,66 DA | 03 MOIS | [AM_85985_2026104_1542_99389_ad.jpg](85985/AM_85985_2026104_1542_99389_ad.jpg)<br>[AM_85985_2026104_1542_99389_ad.jpg](85985/AM_85985_2026104_1542_99389_ad.jpg) |
+| 2 | [85986](https://algeriemarches.com/annonces/991574-realisation-dun-stade-de-proximite-en-gazon-synthetique) | Avis d'Attribution | **RÉALISATION**<br>STADE DE PROXIMITÉ | Relizane | EL HASSI | 11 930 333,10 DA | 04 MOIS | [AM_85986_2026104_15519_63151_ad.jpg](85986/AM_85986_2026104_15519_63151_ad.jpg)<br>[AM_85986_2026104_15519_63151_ad.jpg](85986/AM_85986_2026104_15519_63151_ad.jpg) |
