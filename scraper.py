@@ -606,6 +606,27 @@ class GoogleDriveManager:
 
 # ── Google Sheets Sync ───────────────────────────────────────────────────────
 
+def normalize_date_key(d: str) -> str:
+    """Normalize date string to YYYY-MM-DD for accurate cross-format comparison."""
+    if not d or d == "/":
+        return ""
+    m = re.search(r'(\d{4})[-/](\d{1,2})[-/](\d{1,2})', str(d))
+    if m:
+        return f"{int(m.group(1)):04d}-{int(m.group(2)):02d}-{int(m.group(3)):02d}"
+    m = re.search(r'(\d{1,2})[-/](\d{1,2})[-/](\d{4})', str(d))
+    if m:
+        return f"{int(m.group(3)):04d}-{int(m.group(2)):02d}-{int(m.group(1)):02d}"
+    return ""
+
+def format_date_dmy(d_str: str) -> str:
+    """Format date string as DD/MM/YYYY for French/Algerian locale Google Sheets."""
+    if not d_str or d_str == "/":
+        return "/"
+    m = re.match(r"^(\d{4})-(\d{2})-(\d{2})$", str(d_str).strip())
+    if m:
+        return f"{m.group(3)}/{m.group(2)}/{m.group(1)}"
+    return str(d_str).strip()
+
 def append_to_gsheet(results: list[dict], notice_type: str, sheet_id: str | None = None) -> int:
     """
     Append results to the matching worksheet in Google Sheet.
@@ -716,11 +737,21 @@ def append_to_gsheet(results: list[dict], notice_type: str, sheet_id: str | None
             t_proj = row[col_offset + 4].strip().upper() if len(row) > col_offset + 4 else ""
             wilaya = row[col_offset + 8].strip().upper() if len(row) > col_offset + 8 else ""
             commune = row[col_offset + 9].strip().upper() if len(row) > col_offset + 9 else ""
-            existing_items.add((action, t_proj, wilaya, commune))
+            r_parution = normalize_date_key(row[col_offset + 5]) if len(row) > col_offset + 5 else ""
+            if not r_parution and len(row) > col_offset + 1:
+                r_parution = normalize_date_key(row[col_offset + 1])
+            r_echeance = normalize_date_key(row[col_offset + 6]) if len(row) > col_offset + 6 else ""
+
             norm_w = re.sub(r"[^A-Z0-9]", "", strip_accents(wilaya).upper())
             norm_c = re.sub(r"[^A-Z0-9]", "", strip_accents(commune).upper())
-            if norm_w and norm_c:
-                existing_items.add(("NORM_LOC", norm_w, norm_c))
+
+            if norm_w:
+                if r_parution:
+                    existing_items.add(("AO_PARUTION", action, t_proj, norm_w, norm_c, r_parution))
+                if r_echeance:
+                    existing_items.add(("AO_ECHEANCE", norm_w, norm_c, r_echeance))
+                if not r_parution and not r_echeance:
+                    existing_items.add(("AO_NODATE", action, t_proj, norm_w, norm_c))
         else:
             attr_par = row[col_offset + 12].strip().upper() if len(row) > col_offset + 12 else ""
             wilaya = row[col_offset + 8].strip().upper() if len(row) > col_offset + 8 else ""
@@ -776,20 +807,32 @@ def append_to_gsheet(results: list[dict], notice_type: str, sheet_id: str | None
         norm_c = re.sub(r"[^A-Z0-9]", "", strip_accents(commune).upper())
 
         if notice_type == "appels-doffres":
-            dedup_key = (action.upper(), ptype.upper(), wilaya, commune.upper())
-            norm_loc = ("NORM_LOC", norm_w, norm_c) if (norm_w and norm_c) else None
-            if dedup_key in existing_items or (norm_loc and norm_loc in existing_items):
-                log.info("  Already in Google Sheet (AO): %s | %s (%s)", action, ptype, wilaya)
+            item_parution = normalize_date_key(dt_parution)
+            item_echeance = normalize_date_key(dt_echeance)
+
+            is_dup = False
+            if item_parution and ("AO_PARUTION", action.upper(), ptype.upper(), norm_w, norm_c, item_parution) in existing_items:
+                is_dup = True
+            elif item_echeance and ("AO_ECHEANCE", norm_w, norm_c, item_echeance) in existing_items:
+                is_dup = True
+            elif not item_parution and not item_echeance and ("AO_NODATE", action.upper(), ptype.upper(), norm_w, norm_c) in existing_items:
+                is_dup = True
+
+            if is_dup:
+                log.info("  Already in Google Sheet (AO): %s | %s (%s, %s)", action, ptype, wilaya, commune)
                 continue
 
             last_num += 1
-            existing_items.add(dedup_key)
-            if norm_loc:
-                existing_items.add(norm_loc)
+            if item_parution:
+                existing_items.add(("AO_PARUTION", action.upper(), ptype.upper(), norm_w, norm_c, item_parution))
+            if item_echeance:
+                existing_items.add(("AO_ECHEANCE", norm_w, norm_c, item_echeance))
             if ann_id:
                 existing_ad_ids.add(ann_id)
 
-            date_col_val = dt_parution if dt_parution != "/" else today_str
+            date_col_val = format_date_dmy(dt_parution if dt_parution != "/" else today_str)
+            dt_par_val = format_date_dmy(dt_parution)
+            dt_ech_val = format_date_dmy(dt_echeance)
 
             row_data = ([''] * col_offset) + [
                 last_num,                                # Col 1: N°
@@ -797,8 +840,8 @@ def append_to_gsheet(results: list[dict], notice_type: str, sheet_id: str | None
                 action,                                  # Col 3: TITRE D'APPEL D'OFFRE
                 1,                                       # Col 4: Nombre de projet
                 ptype,                                   # Col 5: TYPE DE PROJET
-                dt_parution,                             # Col 6: DATE DE PARUTION
-                dt_echeance,                             # Col 7: DATE D'ECHEANCE
+                dt_par_val,                              # Col 6: DATE DE PARUTION
+                dt_ech_val,                              # Col 7: DATE D'ECHEANCE
                 ann_val,                                 # Col 8: ANNONCEUR
                 wilaya if wilaya else "/",               # Col 9: WILAYA
                 commune,                                 # Col 10: COMMUNE
