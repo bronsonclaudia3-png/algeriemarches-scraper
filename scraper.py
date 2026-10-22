@@ -63,7 +63,7 @@ load_dotenv(SCRIPT_DIR / ".env")
 EMAIL = os.getenv("AM_EMAIL", "direction@tapidor.com")
 PASSWORD = os.getenv("AM_PASSWORD", "")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
-NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY", "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").strip()
+NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY", "").strip()
 GOOGLE_DRIVE_FOLDER_ID = os.getenv("GOOGLE_DRIVE_FOLDER_ID", "").strip()
 
 BASE_URL = "https://algeriemarches.com"
