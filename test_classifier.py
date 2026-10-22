@@ -43,8 +43,8 @@ def classify_type_projet(titre: str) -> str:
     facility_patterns = [
         ("STADE DE PROXIMITÉ", r"\bSTADES?\s+DE\s+PROXIMIT[EÉ]\b"),
         ("STADE DE FOOTBALL", r"\bSTADES?\s+DE\s+FOOTBALL\b|\bSTADES?\s+DE\s+FOOT\b"),
-        ("STADE COMMUNAL", r"\bSTADES?\s+COMMUNAU?X?\b|\bSTADES?\s+COMMUNALES?\b"),
-        ("STADE MUNICIPAL", r"\bSTADES?\s+MUNICIPAU?X?\b|\bSTADES?\s+MUNICIPALES?\b"),
+        ("STADE COMMUNAL", r"\bSTADES?\s+COMMUNAL(?:ES?|S)?\b|\bSTADES?\s+COMMUNAUX\b"),
+        ("STADE MUNICIPAL", r"\bSTADES?\s+MUNICIPAL(?:ES?|S)?\b|\bSTADES?\s+MUNICIPAUX\b"),
         ("STADE MATICO", r"\bSTADES?\s+MATICO\b"),
         ("STADE", r"\bSTADES?\b"),
         ("TERRAIN DE FOOTBALL", r"\bTERRAINS?\s+DE\s+FOOTBALL\b|\bTERRAINS?\s+DE\s+FOOT\b"),
