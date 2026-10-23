@@ -42,11 +42,14 @@ jobs:
         run: |
           python scraper.py
 
+      # Runs even when the scraper exits 1 (crawl/sheet problems) so cookies and verdicts are kept
       - name: Commit and Push Updated Data, Scans & Cookies
+        if: always()
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add -f state/cookies.json
+          if [ -f state/verdicts.json ]; then git add -f state/verdicts.json; fi
           git add data/
           git diff --quiet && git diff --staged --quiet || git commit -m "Automated scrape & scans update $(date +'%Y-%m-%d %H:%M')"
           git push
