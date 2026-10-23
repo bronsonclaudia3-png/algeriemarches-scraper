@@ -5,8 +5,9 @@ Automated daily sync to Google Sheets & local Downloads Excel file.
 Targets:
   1. "APPEL D'OFFRE 2026" (11 columns)
   2. "AVIS D'ATTRIBUTIONS 2026" (15 columns)
-Domain:
-  Artificial turf, stadiums, sports facilities, playgrounds, school courtyards (TAPIDOR).
+Domain (TAPIDOR):
+  GAZON — turf for stadiums, sports grounds, playgrounds, school courtyards.
+  TAPIS — carpets & moquette for mosques and buildings.
 """
 
 import argparse
@@ -20,7 +21,7 @@ import shutil
 import sys
 import time
 import unicodedata
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import unquote
 
@@ -31,6 +32,7 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload
+from gspread.utils import rowcol_to_a1
 
 # ── Paths ────────────────────────────────────────────────────────────────────
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -77,19 +79,70 @@ DISCONNECT_URL = f"{BASE_URL}/api/proxy/auth/disconnect-session"
 
 PAGE_SIZE = 20
 MAX_PAGES = 15
+# A 7-day window is ~950-1000 notices per type, so the catch-up cap must sit well above 50 pages
+MAX_PAGES_CATCHUP = 120
+LISTING_RETRIES = 3
+LISTING_RETRY_DELAY = 5  # seconds, multiplied by the attempt number
 
-# Sport & turf keywords for TAPIDOR (Exclusive Gazon Scope)
+# Per-notice verdicts so a notice is OCR'd once, not on every daily run of its 7-day window.
+# Bump VERDICTS_VERSION whenever the scope rules or the prompt change, to re-check old verdicts.
+VERDICTS_FILE = STATE_DIR / "verdicts.json"
+VERDICTS_VERSION = 2
+VERDICTS_MAX_AGE_DAYS = 60
+MAX_SCAN_PAGES = 3
+
+# ── TAPIDOR scope keywords ───────────────────────────────────────────────────
+# TAPIDOR works on two product families:
+#   GAZON — turf: gazon / pelouse / engazonnement / عشب / تعشيب
+#   TAPIS — carpets & moquette for mosques and buildings: tapis / moquette / زرابي / سجاد / موكيت
+# The scope regexes are applied to normalize_text() output (lowercase, no accents, no Arabic
+# diacritics, unified alef/ta marbuta) but stay accent-tolerant so they also work on raw text.
+
 DEFAULT_KEYWORDS = (
-    r"\b(?:gazon|pelouse|engazonnement|عشب|تعشيب|نجيل|نجيلة|stade|football|sport|"
-    r"terrain\s+(?:de\s+)?(?:sport|football|proximit[eé]|omnisport|multisport|combin[eé])|"
-    r"terrains\s+(?:de\s+)?(?:sport|football|proximit[eé]|omnisport|multisport|combin[eé]))\b"
+    r"\b(?:gazons?|gazonn\w*|pelouses?|engazonn\w*|stades?|football|sport|"
+    r"terrains?\s+(?:de\s+)?(?:sports?|sportifs?|football|foot|jeux?|proximit[eé]|omnisports?|multisports?|combin[eé]s?)|"
+    r"aires?\s+de\s+jeux?|tapis|moquettes?|moquettage)\b"
+    r"|عشب|تعشيب|نجيل|ملعب|ملاعب|زراب|زربي|سجاد|موكيت"
+    r"|\b(?:[eé]quipements?|ameublements?|fournitures?)\b.{0,60}\bmosqu[eé]es?\b"
+    r"|(?:تجهيز|تاثيث|تأثيث|فرش).{0,40}(?:مسجد|مساجد)"
 )
 KEYWORDS_ENV = os.getenv("AM_KEYWORDS", "").strip()
 ACTIVE_KEYWORDS = KEYWORDS_ENV if KEYWORDS_ENV else DEFAULT_KEYWORDS
 KEYWORD_FILTER = re.compile(ACTIVE_KEYWORDS, re.IGNORECASE)
 
+# Arabic words take attached prefixes (ال، بال، لل، و), so Arabic terms are matched without \b.
 GAZON_EXPLICIT_KEYWORDS = re.compile(
-    r"\b(?:gazon|pelouse|engazonnement|engazonner|عشب|تعشيب|نجيل|نجيلة|gazonné|gazonne|gazonnee|تكسية\s+اصطناعية|تكسية\s+بالعشب|عشب\s+اصطناعي|عشب\s+طبيعي)\b",
+    r"\b(?:gazons?|gazonn[eé]e?s?|pelouses?|engazonn\w*)\b"
+    r"|عشب|تعشيب|(?<![اإ])نجيل|تكسي[ةه]\s+[اإ]صطناعي[ةه]",
+    re.IGNORECASE
+)
+
+# Mentions of gazon that are equipment or upkeep, not a turf project
+GAZON_OUT_OF_SCOPE = re.compile(
+    r"\b(?:tondeuses?|tracteurs?[\s-]tondeuses?)\s+(?:[aà]|de|pour)\s+gazons?\b"
+    r"|\bcoupe[\s-]?gazons?\b|\bd[eé]broussailleuses?\b"
+    r"|\btontes?\s+(?:du\s+|de\s+la\s+|des\s+)?(?:gazons?|pelouses?)\b",
+    re.IGNORECASE
+)
+
+TAPIS_EXPLICIT_KEYWORDS = re.compile(
+    r"\b(?:tapis|moquettes?|moquettage)\b|زراب[يى]|زربي[ةه]|سجاد|موكيت",
+    re.IGNORECASE
+)
+
+# "tapis" that is not a carpet: treadmills, conveyors, asphalt wearing courses, sports mats
+TAPIS_OUT_OF_SCOPE = re.compile(
+    r"\btapis\s+(?:roulants?|de\s+course|convoyeurs?|transporteurs?|de\s+souris|"
+    r"d['’\s]?enrob\w*|en\s+enrob\w*|bitum\w*|en\s+b\.?\s?b\b|en\s+b[eé]ton\s+bitum\w*|"
+    r"de\s+(?:judo|lutte|karat[eé]|taekwondo|gym\w*|yoga|fitness|sol\s+sporti\w*|r[eé]ception)|"
+    r"anti[\s-]?d[eé]rap\w*|[aà]\s+bagages|de\s+bain|d['’\s]?[eé]vacuation|d['’\s]?usure)\b"
+    r"|\bconvoyeurs?\s+[aà]\s+tapis\b|\btatamis?\b|سير\s+ناقل|بساط\s+متحرك",
+    re.IGNORECASE
+)
+
+# A "tapis" next to asphalt vocabulary is a road wearing course
+ROAD_SURFACE_CONTEXT = re.compile(
+    r"\b(?:enrob\w*|bitum\w*|chauss[eé]es?|couche\s+de\s+roulement)\b",
     re.IGNORECASE
 )
 
@@ -98,7 +151,7 @@ NON_GAZON_EXCLUSIONS = re.compile(
     r"chauffage|climatisation|plomberie|electricite|électricité|éclairage\s+public|eclairage\s+public|"
     r"mobilier|bureau|fourniture\s+de\s+bureau|fournitures\s+de\s+bureau|عتاد\s+مكتبي|أثاث|اثاث|طباعة|"
     r"assiette\s+de\s+terrain|assiette\s+fonciere|assiette\s+foncière|logement|logements|aadl|lpp|lpa|pos|viabilisation|geotechnique|géotechnique|"
-    r"assainissement|assainisement|aep|drainage|cantine|salle\s+omnisport|salle\s+de\s+sport|piscine|"
+    r"assainissement|assainisement|aep|drainage|cantine|salles?\s+omnisports?|salles?\s+de\s+sports?|piscine|"
     r"véhicule|véhicules|vehicule|vehicules|trémie|tremie|gradin|gradins|"
     r"glissement|glissements|route\s+nationale|chemin\s+communal|chemins\s+communaux|ouvrage\s+d'art|pont|ponts|voie|voirie|trottoir|trottoirs|"
     r"piste\s+d['’]atterrissage|a[eé]roport|a[eé]rodrome|aviation|bombardier|atterrissage|avion|vol|"
@@ -106,7 +159,16 @@ NON_GAZON_EXCLUSIONS = re.compile(
     r"barrage|retenue\s+collinaire|forage|ch[aâ]teau\s+d['’]eau|hydraulique|"
     r"port|ports|maritime|p[eê]che|"
     r"routes?|autoroutes?|d[eé]viation|tranch[eé]e|rev[eê]tement\s+en\s+enrob[eé]|enrob[eé]|enrob[eé]s|bicouche|tricouche|"
+    r"bitum\w*|chauss[eé]es?|couche\s+de\s+roulement|mat[eé]riels?\s+agricoles?|"
     r"psychop[eé]dagogique|handicap[eé]|handicap[eé]s)\b",
+    re.IGNORECASE
+)
+
+# Exclusions that often appear inside genuine turf projects (stadium drainage, stands, lighting,
+# sports complexes). They no longer discard a notice outright; the scan is checked instead.
+SOFT_EXCLUSIONS = re.compile(
+    r"\b(?:drainage|gradins?|[eé]clairage\s+public|piscines?|salles?\s+omnisports?|"
+    r"voiries?|trottoirs?|assainissement|assainisement)\b",
     re.IGNORECASE
 )
 
@@ -119,6 +181,49 @@ UA = (
 
 def strip_accents(s: str) -> str:
     return "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn")
+
+def normalize_text(s) -> str:
+    """Lowercase, accent-free, diacritic-free text for keyword matching (French & Arabic)."""
+    if not s:
+        return ""
+    s = str(s)
+    # AlgerieMarches titles carry a broken "à" (U+FFFD + NBSP)
+    s = s.replace("� ", "à").replace("�", "")
+    s = strip_accents(s).lower()
+    s = s.replace("ـ", "")  # Arabic tatweel
+    s = re.sub("[إأآٱ]", "ا", s).replace("ى", "ي").replace("ة", "ه")
+    s = s.replace("’", "'").replace("‘", "'")
+    return re.sub(r"[\s   ]+", " ", s).strip()
+
+def detect_scope(text: str) -> str | None:
+    """Return "GAZON" or "TAPIS" when the text explicitly names a TAPIDOR product, else None."""
+    t = normalize_text(text)
+    if GAZON_EXPLICIT_KEYWORDS.search(GAZON_OUT_OF_SCOPE.sub(" ", t)):
+        return "GAZON"
+    t_tapis = TAPIS_OUT_OF_SCOPE.sub(" ", t)
+    if TAPIS_EXPLICIT_KEYWORDS.search(t_tapis) and not ROAD_SURFACE_CONTEXT.search(t_tapis):
+        return "TAPIS"
+    return None
+
+def prefilter_decision(text: str) -> tuple[str, str]:
+    """
+    Decide what to do with a listing before fetching its detail page:
+      ("explicit", scope) — title/description names gazon or tapis: keep it.
+      ("ocr", "")         — sports/mosque wording without an explicit product: read the scan.
+      ("skip", reason)    — unrelated notice.
+    """
+    scope = detect_scope(text)
+    if scope:
+        return "explicit", scope
+    t = normalize_text(text)
+    t_clean = GAZON_OUT_OF_SCOPE.sub(" ", TAPIS_OUT_OF_SCOPE.sub(" ", t))
+    # Custom AM_KEYWORDS may be written with accents, so also try them on the raw text
+    if not (KEYWORD_FILTER.search(t_clean) or (KEYWORDS_ENV and KEYWORD_FILTER.search(str(text or "")))):
+        return "skip", "no keyword"
+    hard = NON_GAZON_EXCLUSIONS.search(SOFT_EXCLUSIONS.sub(" ", t_clean))
+    if hard:
+        return "skip", f"excluded ({hard.group(0)})"
+    return "ocr", ""
 
 def classify_action(titre: str) -> str:
     """Classify the action verb for Col 3 (TITRE D'APPEL D'OFFRE / TITRE D'AVIS D'ATTRIBUTION)."""
@@ -160,6 +265,14 @@ def classify_type_projet(titre: str) -> str:
     """Classify the facility / project type for Col 5 (TYPE DE PROJET)."""
     t_norm = strip_accents(titre).upper()
 
+    if detect_scope(titre) == "TAPIS":
+        t_low = normalize_text(titre)
+        if re.search(r"\bmosqu|مسجد|مساجد", t_low):
+            return "TAPIS MOSQUÉE"
+        if re.search(r"\bmoquett|موكيت", t_low):
+            return "MOQUETTE"
+        return "TAPIS"
+
     facility_patterns = [
         ("STADE DE PROXIMITÉ", r"\bSTADES?\s+(?:DE\s+)?PROXIMIT[EÉ]\b"),
         ("STADE DE FOOTBALL", r"\bSTADES?\s+DE\s+FOOTBALL\b|\bSTADES?\s+DE\s+FOOT\b"),
@@ -188,74 +301,183 @@ def classify_type_projet(titre: str) -> str:
             return facility_label
     return "INFRASTRUCTURE SPORTIVE"
 
+COMMUNE_NAME_STOP_WORDS = {
+    "WILAYA", "DAIRA", "LOT", "LOTS", "POUR", "AU", "AUX", "A", "EN", "ET", "DANS", "SUR", "AVEC",
+    "PAR", "SIS", "SISE", "SITUE", "SITUEE", "LE", "LA", "LES", "DU", "DES", "DE", "D", "PROJET",
+    "REALISATION", "AMENAGEMENT", "REHABILITATION", "TRAVAUX", "FOURNITURE", "ETUDE", "SUIVI",
+    "ALIMENTATION", "QUARTIER", "LIEU", "CHEF",
+}
+
 def parse_commune(titre: str, annonceur: str) -> str:
-    combined = f"{annonceur} {titre}".upper()
-    m = re.search(r"\b(?:COMMUNE D'|COMMUNE DE |APC D'|APC DE )([A-Z\s'\-]+?)(?:\bWILAYA|\bDAIRA|\bALIMENTATION|$)", combined)
-    if m:
-        c = m.group(1).strip()
-        return c if len(c) < 30 else c[:30].strip()
-    if "COMMUNE" in annonceur.upper():
-        words = annonceur.upper().replace("COMMUNE", "").replace("D'", "").replace("DE", "").strip()
-        if words:
-            return words[:30].strip()
+    """Commune name after 'Commune de / APC de' in the annonceur, then in the title; '/' if absent."""
+    for source in (annonceur, titre):
+        u = strip_accents(str(source or "")).upper().replace("’", "'").replace("�", " ")
+        m = re.search(
+            r"\b(?:COMMUNE|APC|A\.P\.C)\b\s*(?:D'|DE\s+L'|DE\s+|DES\s+|DU\s+)?\s*([A-Z][A-Z'\- ]*)", u
+        )
+        if not m:
+            continue
+        words = []
+        for w in m.group(1).split():
+            if w.strip("'-") in COMMUNE_NAME_STOP_WORDS:
+                break
+            words.append(w)
+            if len(words) == 5:
+                break
+        name = " ".join(words).strip(" -'")
+        if len(name) >= 3:
+            return name
     return "/"
 
 def clean_annonceur(ann_raw: str) -> str:
-    if not ann_raw:
+    if not ann_raw or not str(ann_raw).strip():
         return "/"
-    ann_upper = ann_raw.upper().strip()
-    if "COMMUNE" in ann_upper or "A.P.C" in ann_upper or "APC" in ann_upper:
+    ann_raw = str(ann_raw)
+    u = strip_accents(ann_raw).upper().strip().replace("’", "'")
+    if re.match(r"(?:COMMUNE|APC|A\.P\.C|ASSEMBLEE POPULAIRE COMMUNALE)\b", u):
         return "COMMUNE"
-    if "DJS" in ann_upper or "JEUNESSE ET SPORT" in ann_upper or "JEUNESSE ET DES SPORT" in ann_upper:
+    if re.search(r"\bDJS\b|JEUNESSE ET (?:DES )?SPORTS?\b", u):
         return "DJS DE LA WILAYA"
-    if "DEP" in ann_upper or "EQUIPEMENT PUBLIC" in ann_upper or "EQUIPEMENTS PUBLICS" in ann_upper:
+    if re.search(r"\bD\.?E\.?P\b|EQUIPEMENTS? PUBLICS?\b", u):
         return "DEP DE LA WILAYA"
-    if "ADMINISTRATION LOCALE" in ann_upper or "D.A.L" in ann_upper or "DAL" in ann_upper:
+    if re.search(r"ADMINISTRATION LOCALE|\bD\.?A\.?L\b", u):
         return "DIRECTION DE L'ADMINISTRATION LOCALE DE LA WILAYA"
-    if "EDUCATION" in ann_upper:
+    if re.search(r"\bEDUCATION\b", u):
         return "DIRECTION DE L'EDUCATION DE LA WILAYA"
-    if "FORMATION ET DE L'ENSEIGNEMENT" in ann_upper:
+    if "FORMATION ET DE L'ENSEIGNEMENT" in u:
         return "DIRECTION DE LA FORMATION ET DE L'ENSEIGNEMENT PROFESSIONNELS"
+    if re.search(r"\b(?:COMMUNE|APC|A\.P\.C)\b", u):
+        return "COMMUNE"
     return ann_raw[:50].strip()
 
+# A money token: grouped thousands (space, dot or comma) with optional 1-2 decimals, or a plain
+# 4+ digit number. Look-arounds stop it from swallowing parts of dates (12/08/2026, 15.06.2026).
+_AMOUNT_RE = re.compile(
+    r"(?<![\d.,/-])(\d{1,3}(?:[ .,]\d{3})+(?:[.,]\d{1,2})?|\d{4,}(?:[.,]\d{1,2})?)(?![\d/]|[.,]\d)"
+)
+_AMOUNT_PARTS_RE = re.compile(r"^(\d+(?:[.,]\d{3})*)(?:[.,](\d{1,2}))?$")
+_CURRENCY_RE = re.compile(r"^\s*(?:DA\b|DZD\b|D\.A\b|دج|د\.ج|DINARS?\b)", re.IGNORECASE)
+_TTC_LABEL = r"(?:TTC|T\.T\.C|TOUTES\s+TAXES\s+COMPRISES)"
+_TTC_AFTER_RE = re.compile(r"\s*(?:DA|DZD|D\.A|دج|د\.ج|DINARS?)?\.?\s*\(?\s*" + _TTC_LABEL, re.IGNORECASE)
+_TTC_BEFORE_RE = re.compile(_TTC_LABEL + r"\s*\)?\s*(?::|=|EST\s+DE|SOIT|DE)?\s*$", re.IGNORECASE)
+
+def _amount_to_number(token: str):
+    m = _AMOUNT_PARTS_RE.match(token.replace(" ", ""))
+    if not m:
+        return None
+    value = float(re.sub(r"[.,]", "", m.group(1)) + ("." + m.group(2) if m.group(2) else ""))
+    return int(value) if value.is_integer() else value
+
+def extract_amount(text):
+    """
+    Pick ONE amount out of free text without merging neighbouring numbers or dates.
+    Prefers amounts followed by a currency (DA/DZD/دج); among several, the one marked TTC.
+    Returns int/float, or None when no plausible amount (>= 1000 DA) is present.
+    """
+    if text is None:
+        return None
+    if isinstance(text, (int, float)) and not isinstance(text, bool):
+        return int(text) if float(text).is_integer() else float(text)
+    s = re.sub(r"[   ]", " ", str(text))
+    candidates = []
+    for m in _AMOUNT_RE.finditer(s):
+        val = _amount_to_number(m.group(1))
+        if val is None or val < 1000:
+            continue
+        candidates.append((m.start(), m.end(), val, bool(_CURRENCY_RE.match(s[m.end():]))))
+    if not candidates:
+        return None
+    tagged = [c for c in candidates if c[3]]
+    if not tagged:
+        # Untagged numbers: drop bare years when something else is available
+        non_years = [c for c in candidates if not (isinstance(c[2], int) and 1990 <= c[2] <= 2100)]
+        tagged = non_years or candidates
+    if len(tagged) > 1:
+        for start, end, val, _ in tagged:
+            if _TTC_AFTER_RE.match(s[end:]) or _TTC_BEFORE_RE.search(s[max(0, start - 40):start]):
+                return val
+    return tagged[0][2]
+
 def parse_budget(montant_str):
-    if not montant_str or str(montant_str).strip() == "/":
+    if montant_str is None or (isinstance(montant_str, str) and montant_str.strip() in ("", "/")):
         return "/"
-    s = str(montant_str).upper().replace("DA", "").replace("DZD", "").strip()
-    s = s.replace(" ", "")
-    if "." in s and "," in s:
-        if s.rfind(",") > s.rfind("."):
-            s = s.replace(".", "").replace(",", ".")
-        else:
-            s = s.replace(",", "")
-    elif "," in s and "." not in s:
-        parts = s.split(",")
-        if len(parts) == 2 and len(parts[1]) <= 2:
-            s = f"{parts[0]}.{parts[1]}"
-        else:
-            s = s.replace(",", "")
-    elif "." in s and "," not in s:
-        parts = s.split(".")
-        if len(parts) == 2 and len(parts[1]) <= 2:
-            pass
-        elif len(parts) > 2:
-            if len(parts[-1]) <= 2:
-                s = f"{''.join(parts[:-1])}.{parts[-1]}"
-            else:
-                s = "".join(parts)
-    try:
-        val = float(re.sub(r"[^\d.]", "", s))
-        return int(val) if val.is_integer() else val
-    except Exception:
-        return str(montant_str).strip()
+    val = extract_amount(montant_str)
+    return val if val is not None else "/"
+
+_DELAI_RE = re.compile(
+    r"(\d+)\s*\)?\s*(?:\([^)\d]{1,20}\)\s*)?(jours?|j\b|mois|semaines?|يوم|ايام|شهر|اشهر|شهور|اسبوع|اسابيع)",
+    re.IGNORECASE,
+)
+_DELAI_UNITS = {
+    "jour": "JOURS", "jours": "JOURS", "j": "JOURS", "يوم": "JOURS", "ايام": "JOURS",
+    "mois": "MOIS", "شهر": "MOIS", "اشهر": "MOIS", "شهور": "MOIS",
+    "semaine": "SEMAINES", "semaines": "SEMAINES", "اسبوع": "SEMAINES", "اسابيع": "SEMAINES",
+}
+# "10 jours à compter de la publication" is the contestation window, not the execution delay
+_RECOURS_CONTEXT = re.compile(r"recours|contestation|reclamation|a compter de|طعن|تظلم", re.IGNORECASE)
+_EXECUTION_CONTEXT = re.compile(r"delai|duree|execution|realisation|مده|اجل|انجاز", re.IGNORECASE)
+
+def normalize_delai(text) -> str:
+    """Execution delay as 'NN JOURS' / 'NN MOIS' / 'NN SEMAINES', or '/'."""
+    if text is None:
+        return "/"
+    t = normalize_text(text)
+    best = None
+    for m in _DELAI_RE.finditer(t):
+        before = t[max(0, m.start() - 60):m.start()]
+        if _RECOURS_CONTEXT.search(t[max(0, m.start() - 25):m.start()]) or _RECOURS_CONTEXT.search(t[m.end():m.end() + 40]):
+            continue
+        value = f"{m.group(1)} {_DELAI_UNITS[m.group(2).lower()]}"
+        if _EXECUTION_CONTEXT.search(before):
+            return value
+        if best is None:
+            best = value
+    return best or "/"
 
 def parse_delai(nbr_jours: int, description: str) -> str:
-    if nbr_jours and int(nbr_jours) > 0:
-        return f"{nbr_jours} JOURS"
-    m = re.search(r"\b(\d+\s*(?:JOURS?|MOIS|SEMAINES?))\b", str(description).upper())
-    if m:
-        return m.group(1).strip()
-    return "/"
+    try:
+        if nbr_jours and int(nbr_jours) > 0:
+            return f"{nbr_jours} JOURS"
+    except (TypeError, ValueError):
+        pass
+    return normalize_delai(description)
+
+ALGERIA_TZ = timezone(timedelta(hours=1))
+
+def to_local_date(value) -> str:
+    """
+    YYYY-MM-DD in Algerian time. API timestamps are UTC ('2026-10-21T23:00:00.000Z' is the 22nd
+    in Algiers), so slicing the first 10 characters can land on the previous day.
+    """
+    if not value:
+        return ""
+    s = str(value).strip()
+    if re.match(r"^\d{4}-\d{2}-\d{2}T", s) and re.search(r"(?:Z|[+-]\d{2}:?\d{2})$", s):
+        try:
+            return datetime.fromisoformat(s.replace("Z", "+00:00")).astimezone(ALGERIA_TZ).strftime("%Y-%m-%d")
+        except ValueError:
+            pass
+    return normalize_date_key(s)
+
+def clean_date_parution_ao(value, date_attribution: str) -> str:
+    """
+    Original AO publication date for an award, as DD/MM/YYYY, or '/'.
+    It must be a real date, not after the award itself and not more than two years before it.
+    """
+    key = normalize_date_key(value)
+    if not key:
+        return "/"
+    try:
+        d = datetime.strptime(key, "%Y-%m-%d")
+    except ValueError:
+        log.warning("Discarding invalid date_parution_ao '%s'", value)
+        return "/"
+    ref_key = normalize_date_key(date_attribution) or datetime.now().strftime("%Y-%m-%d")
+    ref = datetime.strptime(ref_key, "%Y-%m-%d")
+    if d > ref or d < ref - timedelta(days=730):
+        log.warning("Discarding implausible date_parution_ao '%s' (award date %s)", value, ref_key)
+        return "/"
+    return d.strftime("%d/%m/%Y")
 
 def parse_date(date_val):
     if not date_val:
@@ -272,29 +494,34 @@ def parse_date(date_val):
 # ── AI Scan Vision (NVIDIA NIM / DeepSeek OCR) ────────────────────────────────
 
 NVIDIA_MODEL = "z-ai/glm-5.3-flash"
+# (model, read timeout in seconds). moonshotai/kimi-k3 was retired by NVIDIA (HTTP 410, Oct 2026).
 NVIDIA_FALLBACK_MODELS = [
-    ("z-ai/glm-5.3-flash", 25),
-    ("moonshotai/kimi-k3", 25),
+    ("z-ai/glm-5.3-flash", 60),
 ]
+# After this many consecutive NVIDIA failures in one run, go straight to Gemini for the rest of it
+NVIDIA_MAX_CONSECUTIVE_FAILURES = 3
+_nvidia_state = {"failures": 0, "disabled": False}
 
 
-PROMPT_SCAN_ANALYSIS = """You are an expert document analysis and OCR system specialized in Algerian public procurement (Marchés Publics / الصفقات العمومية) for TAPIDOR, a company specializing EXCLUSIVELY in SPORTS TURF (gazon synthétique / pelouse synthétique / engazonnement / عشب اصطناعي / تعشيب / تكسية بالعشب الاصطناعي).
+PROMPT_SCAN_ANALYSIS = """You are an expert document analysis and OCR system specialized in Algerian public procurement (Marchés Publics / الصفقات العمومية) for TAPIDOR.
 The document may be in French, Arabic, or bilingual.
 
-CRITICAL REQUIREMENT (STRICT GAZON / TURF SCOPE ONLY):
-TAPIDOR only works on GAZON / TURF projects.
-WARNING: A project is NOT gazon simply because it mentions 'stade', 'terrain de sport', 'ملعب', 'aire de jeux', 'complexe sportif', 'peinture', 'éclairage', 'clôture', 'gradins', or 'aménagement de centre'.
-Many Algerian tenders are for civil masonry, school rehabilitation, roadworks, or concrete/asphalt/MATICO multi-sports grounds WITHOUT ANY TURF.
+TAPIDOR ONLY works on two product families:
+1. GAZON — sports or landscape turf: GAZON / PELOUSE (synthétique ou naturel), ENGAZONNEMENT, REVÊTEMENT EN GAZON, POSE DE GAZON, عشب اصطناعي / عشب طبيعي / تعشيب / تكسية بالعشب الاصطناعي.
+2. TAPIS — carpets and moquette for MOSQUES or BUILDINGS (offices, schools, hotels, conference rooms): TAPIS, MOQUETTE, زرابي / زربية / سجاد / موكيت.
 
-STRICT RULE:
-Only set "is_gazon": true if the document, title, lots, or award table EXPLICITLY mentions:
-- GAZON (synthétique ou naturel)
-- PELOUSE (synthétique ou naturelle)
-- ENGAZONNEMENT / ENGAZONNER
-- REVÊTEMENT EN GAZON / POSE DE GAZON
-- عشب اصطناعي / عشب طبيعي / تعشيب / تكسية بالعشب الاصطناعي / تكسية اصطناعية لملعب
-If the project does NOT explicitly mention gazon/pelouse/turf (e.g. it is general construction, roadworks/glissement, fencing, civil works, or just 'aménagement/réhabilitation de stade/terrain/centre' without turf):
-You MUST set "is_gazon": false and "gazon_mention": "NONE"!
+NOT IN SCOPE (scope must be "NONE"):
+- Projects that only mention 'stade', 'terrain de sport', 'ملعب', 'aire de jeux', 'complexe sportif', 'peinture', 'éclairage', 'clôture', 'gradins', 'vestiaires' without explicit gazon/pelouse/turf.
+- Civil masonry, school rehabilitation, roadworks, concrete/asphalt/MATICO multi-sports grounds WITHOUT turf.
+- Tondeuses à gazon / lawn mowers, matériel agricole, tonte d'espaces verts.
+- "Tapis" that is NOT a carpet: tapis roulant (treadmill/conveyor), tapis d'enrobé / tapis en béton bitumineux (road asphalt layer), tatami, tapis de judo / gymnastique / sol sportif, tapis de souris.
+
+STRICT RULE: set "scope" to "GAZON" or "TAPIS" ONLY if the document EXPLICITLY names the product, and quote it verbatim in "scope_evidence". Otherwise "scope": "NONE" and "scope_evidence": "NONE".
+
+LOTS (very important for award notices / avis d'attribution):
+If the notice lists several lots (Lot 01, Lot 02, الحصة 01 ...), return EACH lot separately in "lots" with ITS OWN amount, winner and delay. NEVER add lot amounts together and NEVER merge several lots into one budget.
+Set "in_scope": true only for lots whose object explicitly concerns gazon or tapis/moquette.
+If there is a single lot or no lot structure, return one entry in "lots".
 
 DATE DE PARUTION REQUIREMENT (FOR AVIS D'ATTRIBUTION):
 Extract "date_parution_ao" ONLY if the text explicitly states the date when the original Appel d'Offres was published in national newspapers (e.g. 'paru dans les journaux le DD/MM/2026' or 'الصادرة بتاريخ 2026/MM/DD في جريدة ...').
@@ -304,20 +531,33 @@ If no newspaper publication date is explicitly mentioned in the text (such as fo
 NEVER use the newspaper print date or footer date at the very bottom (such as 'An-Nasr 21-9-2026', ANEP footer, or 'El-Moudjahid').
 NEVER use dates from decrees (e.g. 2015, 2023), dates of consultation, or date of bid opening.
 
+AMOUNTS: copy exactly ONE amount per field, digits as printed, followed by DA (e.g. '37 756 320,00 DA'). Prefer the final corrected TTC amount. Never put a date or a lot number in an amount field.
+
 Extract the following in strict JSON:
 {
-  "is_gazon": true or false,
-  "objet_marche": "Verbatim title or project operation object from the document in French or Arabic (e.g. 'Revêtement en gazon synthétique du stade...')",
-  "gazon_mention": "Exact verbatim quote or phrase from the document mentioning gazon/pelouse/turf/عشب/تعشيب, or 'NONE' if not present.",
-  "action": "Main action verb in French (e.g. REALISATION, AMENAGEMENT, REVETEMENT, REHABILITATION, REFECTION) or '/'",
-  "type_projet": "Facility type in French (e.g. STADE, STADE COMMUNAL, STADE DE PROXIMITE, AIRE DE JEUX, TERRAIN DE SPORT) or '/'",
-  "budget": "Final winning amount or estimated budget with currency. Prioritize final corrected TTC amount. Example: '37 756 320,00 DA' or '/' if none.",
-  "delai": "Execution delay. Format 'XX JOURS' or 'XX MOIS'. Example: '03 MOIS' or '60 JOURS' or '/' if none.",
-  "commune": "Commune (municipality) name in UPPERCASE Latin/French letters or '/'",
+  "scope": "GAZON" or "TAPIS" or "NONE",
+  "scope_evidence": "Exact verbatim quote naming gazon/pelouse/عشب or tapis/moquette/زرابي, or 'NONE'.",
+  "objet_marche": "Verbatim title or project object from the document in French or Arabic",
+  "action": "Main action verb in French (e.g. REALISATION, AMENAGEMENT, REVETEMENT, REHABILITATION, FOURNITURE ET POSE) or '/'",
+  "type_projet": "Facility type in French (e.g. STADE, STADE COMMUNAL, STADE DE PROXIMITE, AIRE DE JEUX, TERRAIN DE SPORT, MOSQUEE) or '/'",
+  "budget": "Single winning amount TTC (only when there is ONE lot) or '/'",
+  "delai": "Execution delay 'XX JOURS' or 'XX MOIS' (only when there is ONE lot) or '/'",
+  "commune": "Commune (municipality) name in UPPERCASE Latin letters or '/'",
   "wilaya": "Wilaya name in UPPERCASE or '/'",
   "annonceur": "Contracting authority name in French or '/'",
-  "entreprise_attributaire": "Winning contractor name in Latin letters or '/' if none.",
-  "date_parution_ao": "Date when original Appel d'Offres was published strictly from INSIDE the paragraph text (or '/' if not in paragraph text)."
+  "entreprise_attributaire": "Winning contractor in Latin letters (only when there is ONE lot) or '/'",
+  "date_parution_ao": "Original Appel d'Offres publication date from INSIDE the paragraph text, DD/MM/YYYY, or '/'",
+  "lots": [
+    {
+      "numero": "01",
+      "objet": "Verbatim object of this lot",
+      "in_scope": true or false,
+      "commune": "Commune of this lot in UPPERCASE or '/'",
+      "budget": "Amount awarded for THIS lot only, e.g. '6 959 358,00 DA', or '/'",
+      "entreprise_attributaire": "Winner of THIS lot or '/'",
+      "delai": "Delay of THIS lot, e.g. '45 JOURS', or '/'"
+    }
+  ]
 }
 Return ONLY valid JSON."""
 
@@ -366,14 +606,17 @@ def extract_json_from_text(text: str) -> dict:
 
 def analyze_scan_with_nvidia(img_bytes: bytes, api_key: str | None = None) -> dict:
     """
-    Extract complementary details from attached ad scans using NVIDIA NIM free endpoints.
-    Primary model: deepseek-ai/deepseek-v4.1-flash.
+    Extract complementary details from attached ad scans using NVIDIA NIM.
+    Primary model: z-ai/glm-5.3-flash. Returns the raw model JSON, or {} on failure.
     """
     key = api_key or NVIDIA_API_KEY
     if not key or not img_bytes:
         return {}
 
     opt_bytes, mime = prepare_image_for_ocr(img_bytes)
+    if mime == "application/pdf":
+        # NIM chat models only accept images; PDFs go to Gemini
+        return {}
     b64_img = base64.b64encode(opt_bytes).decode("utf-8")
 
     url = "https://integrate.api.nvidia.com/v1/chat/completions"
@@ -394,7 +637,7 @@ def analyze_scan_with_nvidia(img_bytes: bytes, api_key: str | None = None) -> di
                     ]
                 }
             ],
-            "max_tokens": 1024,
+            "max_tokens": 2048,
             "temperature": 0.1
         }
         try:
@@ -405,13 +648,14 @@ def analyze_scan_with_nvidia(img_bytes: bytes, api_key: str | None = None) -> di
                 raw_text = msg.get("content") or msg.get("reasoning_content") or ""
                 data = extract_json_from_text(raw_text)
                 if data and isinstance(data, dict):
-                    log.info("NVIDIA NIM (%s) extracted -> is_gazon: %s | Commune: %s | Budget: %s | Delai: %s | Parution AO: %s",
-                             model, data.get("is_gazon"), data.get("commune"), data.get("budget"), data.get("delai"), data.get("date_parution_ao"))
+                    log.info("NVIDIA NIM (%s) extracted -> scope: %s | Commune: %s | Budget: %s | Lots: %d | Parution AO: %s",
+                             model, data.get("scope", data.get("is_gazon")), data.get("commune"), data.get("budget"),
+                             len(data.get("lots") or []), data.get("date_parution_ao"))
                     time.sleep(0.5)
                     return data
+                log.warning("NVIDIA NIM (%s) answered without parseable JSON: %s", model, raw_text[:120])
             elif r.status_code in (429, 503):
                 log.warning("NVIDIA NIM (%s) status %d -- falling back...", model, r.status_code)
-                continue
             else:
                 log.warning("NVIDIA NIM (%s) returned %d: %s", model, r.status_code, r.text[:120])
         except Exception as e:
@@ -419,25 +663,21 @@ def analyze_scan_with_nvidia(img_bytes: bytes, api_key: str | None = None) -> di
 
     return {}
 
+# gemini-2.0-flash and gemini-1.5-flash return 404 since Oct 2026
 GEMINI_MODELS = [
     "gemini-2.5-flash",
-    "gemini-2.0-flash",
-    "gemini-1.5-flash",
     "gemini-flash-latest",
 ]
+GEMINI_TIMEOUT = 60
+GEMINI_RETRY_DELAYS = (5, 15)  # seconds to wait before retrying a model after 429/503/timeout
 
 def analyze_scan_with_gemini(img_bytes: bytes, api_key: str | None = None) -> dict:
     key = api_key or GEMINI_API_KEY
     if not key or not img_bytes:
         return {}
 
-    b64_img = base64.b64encode(img_bytes).decode("utf-8")
-    if img_bytes[:4] == b"%PDF":
-        mime = "application/pdf"
-    elif img_bytes[:8] == b"\x89PNG\r\n\x1a\n":
-        mime = "image/png"
-    else:
-        mime = "image/jpeg"
+    opt_bytes, mime = prepare_image_for_ocr(img_bytes)
+    b64_img = base64.b64encode(opt_bytes).decode("utf-8")
 
     payload = {
         "contents": [
@@ -448,50 +688,139 @@ def analyze_scan_with_gemini(img_bytes: bytes, api_key: str | None = None) -> di
                 ]
             }
         ],
-        "generationConfig": {"response_mime_type": "application/json"}
+        "generationConfig": {"response_mime_type": "application/json", "temperature": 0.1}
     }
 
     for model in GEMINI_MODELS:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
-        try:
-            r = requests.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=15)
-            if r.status_code == 200:
-                content = r.json()["candidates"][0]["content"]["parts"][0]["text"]
-                data = json.loads(content)
-                log.info("Gemini Vision (%s) extracted -> is_gazon: %s | Commune: %s | Budget: %s | Delai: %s | Parution AO: %s",
-                         model, data.get("is_gazon"), data.get("commune"), data.get("budget"), data.get("delai"), data.get("date_parution_ao"))
-                time.sleep(0.5)
-                return data
-            elif r.status_code in (429, 503):
-                log.warning("Gemini (%s) status %d -- falling back immediately...", model, r.status_code)
-                continue
-            else:
-                log.warning("Gemini (%s) returned %d: %s", model, r.status_code, r.text[:120])
-        except Exception as e:
-            log.warning("Gemini (%s) request error (%s) -- falling back...", model, e)
+        for attempt in range(len(GEMINI_RETRY_DELAYS) + 1):
+            retryable = False
+            try:
+                r = requests.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=GEMINI_TIMEOUT)
+                if r.status_code == 200:
+                    content = r.json()["candidates"][0]["content"]["parts"][0]["text"]
+                    data = extract_json_from_text(content)
+                    if data and isinstance(data, dict):
+                        log.info("Gemini Vision (%s) extracted -> scope: %s | Commune: %s | Budget: %s | Lots: %d | Parution AO: %s",
+                                 model, data.get("scope", data.get("is_gazon")), data.get("commune"), data.get("budget"),
+                                 len(data.get("lots") or []), data.get("date_parution_ao"))
+                        time.sleep(0.5)
+                        return data
+                    log.warning("Gemini (%s) answered without parseable JSON: %s", model, content[:120])
+                elif r.status_code in (429, 500, 503):
+                    retryable = True
+                    log.warning("Gemini (%s) status %d (attempt %d)", model, r.status_code, attempt + 1)
+                else:
+                    log.warning("Gemini (%s) returned %d: %s", model, r.status_code, r.text[:120])
+            except requests.exceptions.Timeout as e:
+                retryable = True
+                log.warning("Gemini (%s) timed out (attempt %d): %s", model, attempt + 1, e)
+            except Exception as e:
+                log.warning("Gemini (%s) request error (%s) -- falling back...", model, e)
+            if not retryable or attempt >= len(GEMINI_RETRY_DELAYS):
+                break
+            time.sleep(GEMINI_RETRY_DELAYS[attempt])
     return {}
 
 
 def analyze_scan(img_bytes: bytes) -> dict:
     """
-    Primary scan analysis using NVIDIA NIM (DeepSeek v4.1-flash).
-    Falls back to Gemini if NVIDIA key is absent or NIM endpoints fail.
+    Read one scan: NVIDIA NIM (GLM 5.3 Flash) first, then Gemini 2.5 Flash / flash-latest.
+    Returns normalize_ai_data() output, or {} when every engine failed (scan could not be read).
     """
-    if NVIDIA_API_KEY:
+    if NVIDIA_API_KEY and not _nvidia_state["disabled"]:
         try:
             data = analyze_scan_with_nvidia(img_bytes)
-            if data:
-                return data
         except Exception as e:
             log.warning("NVIDIA NIM analysis error: %s", e)
+            data = {}
+        if data:
+            _nvidia_state["failures"] = 0
+            return normalize_ai_data(data)
+        if img_bytes[:4] != b"%PDF":
+            _nvidia_state["failures"] += 1
+            if _nvidia_state["failures"] >= NVIDIA_MAX_CONSECUTIVE_FAILURES:
+                _nvidia_state["disabled"] = True
+                log.warning("NVIDIA NIM failed %d times in a row -- using Gemini only for the rest of this run",
+                            _nvidia_state["failures"])
 
     if GEMINI_API_KEY:
         try:
-            return analyze_scan_with_gemini(img_bytes)
+            return normalize_ai_data(analyze_scan_with_gemini(img_bytes))
         except Exception as e:
             log.warning("Gemini fallback analysis error: %s", e)
 
     return {}
+
+# ── AI output normalization ──────────────────────────────────────────────────
+
+AI_TEXT_FIELDS = (
+    "objet_marche", "scope_evidence", "action", "type_projet", "budget", "delai", "commune",
+    "wilaya", "annonceur", "entreprise_attributaire", "date_parution_ao",
+)
+AI_LOT_FIELDS = ("numero", "objet", "commune", "budget", "entreprise_attributaire", "delai")
+
+def _ai_str(v) -> str:
+    """Models return null, numbers, lists or booleans in text fields; turn all of them into text or '/'."""
+    if v is None or isinstance(v, bool):
+        return "/"
+    if isinstance(v, (int, float)):
+        return str(v)
+    if isinstance(v, list):
+        return ", ".join(s for s in (_ai_str(x) for x in v) if s != "/") or "/"
+    if isinstance(v, dict):
+        return "/"
+    s = str(v).strip()
+    return s if s and s.upper() not in ("NULL", "NONE", "N/A") else "/"
+
+def _ai_bool(v) -> bool:
+    return v is True or str(v).strip().lower() in ("true", "yes", "oui", "1")
+
+def normalize_ai_data(raw) -> dict:
+    """Coerce a model answer into the expected shape. {} stays {} (meaning: OCR failed)."""
+    if not isinstance(raw, dict) or not raw:
+        return {}
+    data = {k: _ai_str(raw.get(k)) for k in AI_TEXT_FIELDS}
+    if data["scope_evidence"] == "/":
+        data["scope_evidence"] = _ai_str(raw.get("gazon_mention"))
+
+    scope = str(raw.get("scope") or "").strip().upper()
+    if scope not in ("GAZON", "TAPIS", "NONE"):
+        scope = "GAZON" if _ai_bool(raw.get("is_gazon")) else "NONE"
+    data["scope"] = scope
+
+    lots = []
+    for lot in raw.get("lots") or []:
+        if not isinstance(lot, dict):
+            continue
+        clean = {k: _ai_str(lot.get(k)) for k in AI_LOT_FIELDS}
+        clean["in_scope"] = _ai_bool(lot.get("in_scope"))
+        lots.append(clean)
+    data["lots"] = lots
+    return data
+
+def merge_ai_data(primary: dict, extra: dict) -> dict:
+    """Combine two pages of the same notice: fill gaps from `extra`, keep any in-scope verdict."""
+    if not primary:
+        return extra or {}
+    if not extra:
+        return primary
+    merged = dict(primary)
+    for k in AI_TEXT_FIELDS:
+        if merged.get(k, "/") == "/" and extra.get(k, "/") != "/":
+            merged[k] = extra[k]
+    if merged.get("scope") not in ("GAZON", "TAPIS") and extra.get("scope") in ("GAZON", "TAPIS"):
+        merged["scope"] = extra["scope"]
+        merged["scope_evidence"] = extra.get("scope_evidence", "/")
+    if not merged.get("lots") and extra.get("lots"):
+        merged["lots"] = extra["lots"]
+    return merged
+
+def ai_confirmed_scope(ai_data: dict) -> str | None:
+    """The scope the AI claims, but only if its quoted evidence really names gazon or tapis."""
+    if not ai_data or ai_data.get("scope") not in ("GAZON", "TAPIS"):
+        return None
+    return detect_scope(ai_data.get("scope_evidence", ""))
 
 # ── Google Drive Manager ─────────────────────────────────────────────────────
 
@@ -627,16 +956,214 @@ def format_date_dmy(d_str: str) -> str:
         return f"{m.group(3)}/{m.group(2)}/{m.group(1)}"
     return str(d_str).strip()
 
-def append_to_gsheet(results: list[dict], notice_type: str, sheet_id: str | None = None) -> int:
+def sheet_text(value) -> str:
     """
-    Append results to the matching worksheet in Google Sheet.
-    - notice_type 'appels-doffres' -> 'APPEL D'OFFRE 2026' (11 columns)
-    - notice_type 'avis-attribution' -> 'AVIS D'ATTRIBUTIONS 2026' (15 columns)
+    Force Google Sheets to keep a value as literal text. The spreadsheet locale is en_US, so a
+    USER_ENTERED '02/11/2026' would silently become February 11 (shown as serial 46064).
     """
+    s = str(value).strip() if value is not None else ""
+    if not s or s == "/":
+        return "/"
+    return "'" + s
+
+GITHUB_REPO_URL = "https://github.com/bronsonclaudia3-png/algeriemarches-scraper"
+
+# Notice IDs are embedded in every SCANS cell: in the GitHub scan folder path, or as #ad-<id>
+# on the AlgerieMarches link written when a notice has no scan.
+AD_ID_PATTERNS = (
+    re.compile(r'/(\d{5,6})(?:/|"|\.|$)'),
+    re.compile(r'#ad-(\d{5,6})\b'),
+)
+
+def extract_ad_ids(cell) -> set[str]:
+    found = set()
+    for pattern in AD_ID_PATTERNS:
+        found.update(pattern.findall(str(cell)))
+    return found
+
+def _norm_key(s) -> str:
+    return re.sub(r"[^A-Z0-9]", "", strip_accents(str(s or "")).upper())
+
+def _budget_key(value) -> str:
+    v = parse_budget(value)
+    return f"{float(v):.2f}" if v != "/" else ""
+
+def build_scan_link(item: dict) -> str:
+    ann_id = str(item.get("id", "") or item.get("id_annonce", "")).strip()
+    dt_parution = to_local_date(item.get("date_parution")) or "/"
+    scan_names = [Path(s).name for s in item.get("scans") or []]
+    if scan_names and ann_id and dt_parution != "/":
+        if len(scan_names) == 1:
+            return f'=HYPERLINK("{GITHUB_REPO_URL}/blob/main/data/scans/{dt_parution}/{ann_id}/{scan_names[0]}", "📄 Voir Scan")'
+        return f'=HYPERLINK("{GITHUB_REPO_URL}/tree/main/data/scans/{dt_parution}/{ann_id}", "📁 Voir {len(scan_names)} Scans")'
+    if ann_id and item.get("slug"):
+        return f'=HYPERLINK("{BASE_URL}/annonces/{item["slug"]}#ad-{ann_id}", "🔗 Annonce")'
+    return "/"
+
+def ao_dedup_keys(action, ptype, norm_w, norm_c, parution_key, echeance_key) -> list[tuple]:
+    """Secondary AO keys. Never use a date-less location key (it dropped notices 85018 and 93574)."""
+    if not norm_w:
+        return []
+    keys = []
+    if parution_key:
+        keys.append(("AO_PARUTION", action, ptype, norm_w, norm_c, parution_key))
+    if echeance_key:
+        keys.append(("AO_ECHEANCE", norm_w, norm_c, echeance_key))
+    if not parution_key and not echeance_key:
+        keys.append(("AO_NODATE", action, ptype, norm_w, norm_c))
+    return keys
+
+def aa_dedup_key(norm_w, norm_c, budget_key, attr_norm, date_attr_key) -> tuple | None:
+    """Secondary AA key for one lot row: the exact amount in that commune, else winner + award date."""
+    if not norm_w:
+        return None
+    if budget_key:
+        return ("AA_BUDGET", norm_w, norm_c, budget_key)
+    if attr_norm and date_attr_key:
+        return ("AA_NOBUDGET", norm_w, norm_c, attr_norm, date_attr_key)
+    return None
+
+def read_sheet_state(ws, notice_type: str) -> dict | None:
+    """Locate the data columns and index what the worksheet already contains."""
+    try:
+        all_values = ws.get_all_values()
+        all_formulas = ws.get_all_values(value_render_option="FORMULA")
+    except Exception as e:
+        log.error("Failed to read values from Google Sheet: %s", e)
+        return None
+
+    header_row = all_values[2] if len(all_values) > 2 else []
+    col_offset = next((i for i, cell in enumerate(header_row) if str(cell).strip().upper() == "N°"), None)
+    if col_offset is None:
+        log.error("Worksheet '%s': no 'N°' header in row 3 -- refusing to write misaligned rows", ws.title)
+        return None
+    scans_idx = col_offset + (11 if notice_type == "appels-doffres" else 15)
+    scans_header = str(header_row[scans_idx]).strip().upper() if len(header_row) > scans_idx else ""
+    if scans_header != "SCANS":
+        log.error("Worksheet '%s': expected 'SCANS' header at column %d, found '%s' -- layout changed, not writing",
+                  ws.title, scans_idx + 1, scans_header)
+        return None
+
+    def cell(row, i):
+        return str(row[col_offset + i]).strip() if len(row) > col_offset + i else ""
+
+    last_num = 0
+    ids, items = set(), set()
+    for idx, (row, frow) in enumerate(zip(all_values, all_formulas)):
+        if idx < 3:  # Skip title & header rows
+            continue
+        for c in list(row) + list(frow):
+            ids.update(extract_ad_ids(c))
+        try:
+            last_num = max(last_num, int(cell(row, 0)))
+        except ValueError:
+            pass
+
+        norm_w = _norm_key(cell(row, 8))
+        norm_c = _norm_key(cell(row, 9))
+        if notice_type == "appels-doffres":
+            parution = normalize_date_key(cell(row, 5)) or normalize_date_key(cell(row, 1))
+            items.update(ao_dedup_keys(cell(row, 2).upper(), cell(row, 4).upper(), norm_w, norm_c,
+                                       parution, normalize_date_key(cell(row, 6))))
+        else:
+            key = aa_dedup_key(norm_w, norm_c, _budget_key(cell(row, 11)), _norm_key(cell(row, 12)),
+                               normalize_date_key(cell(row, 10)))
+            if key:
+                items.add(key)
+
+    return {"col_offset": col_offset, "last_num": last_num, "ids": ids, "items": items, "n_rows": len(all_values)}
+
+def build_ao_row(item: dict, today_str: str) -> tuple[list, list[tuple]]:
+    """One APPEL D'OFFRE row (without N°) and its dedup keys."""
+    titre = item.get("titre", "")
+    action = item.get("action") or classify_action(titre)
+    ptype = item.get("ptype") or classify_type_projet(titre)
+    wilaya = (item.get("wilaya") or "").strip().upper()
+    commune = item.get("commune") if item.get("commune") not in (None, "", "/") else parse_commune(titre, item.get("annonceur", ""))
+    dt_parution = to_local_date(item.get("date_parution")) or "/"
+    dt_echeance = to_local_date(item.get("date_echeance")) or "/"
+
+    row = [
+        sheet_text(format_date_dmy(dt_parution if dt_parution != "/" else today_str)),  # DATE
+        action,                                     # TITRE D'APPEL D'OFFRE
+        1,                                          # Nombre de projet
+        ptype,                                      # TYPE DE PROJET
+        sheet_text(format_date_dmy(dt_parution)),   # DATE DE PARUTION
+        sheet_text(format_date_dmy(dt_echeance)),   # DATE D'ECHEANCE
+        clean_annonceur(item.get("annonceur", "")),  # ANNONCEUR
+        wilaya or "/",                              # WILAYA
+        commune,                                    # COMMUNE
+        "TRAVAUX PUBLICS",                          # CATEGORIE
+        build_scan_link(item),                      # SCANS
+    ]
+    keys = ao_dedup_keys(action.upper(), ptype.upper(), _norm_key(wilaya), _norm_key(commune),
+                         normalize_date_key(dt_parution), normalize_date_key(dt_echeance))
+    return row, keys
+
+GENERIC_PTYPES = {"INFRASTRUCTURE SPORTIVE", "TERRAIN", "COUR"}
+
+def build_aa_rows(item: dict, today_str: str) -> list[tuple[list, tuple | None]]:
+    """One AVIS D'ATTRIBUTION row (without N°) per in-scope lot, each with its own amount and winner."""
+    titre = item.get("titre", "")
+    action = item.get("action") or classify_action(titre)
+    ptype = item.get("ptype") or classify_type_projet(titre)
+    wilaya = (item.get("wilaya") or "").strip().upper()
+    commune = item.get("commune") if item.get("commune") not in (None, "", "/") else parse_commune(titre, item.get("annonceur", ""))
+    dt_parution = to_local_date(item.get("date_parution")) or "/"
+    dt_echeance = to_local_date(item.get("date_echeance")) or "/"
+    date_col_val = dt_parution if dt_parution != "/" else today_str
+    dt_parution_ao = clean_date_parution_ao(item.get("date_parution_ao"), date_col_val)
+    ann_val = clean_annonceur(item.get("annonceur", ""))
+    scan_link = build_scan_link(item)
+    item_delai = item.get("delai") or parse_delai(item.get("nbr_jours", 0), item.get("description", ""))
+
+    lots = item.get("lots") or [{}]
+    single = len(lots) == 1
+    rows = []
+    for lot in lots:
+        objet = lot.get("objet", "/")
+        lot_action = classify_action(objet) if objet != "/" else "TRAVAUX"
+        lot_ptype = classify_type_projet(objet) if objet != "/" else "INFRASTRUCTURE SPORTIVE"
+        lot_commune = lot.get("commune", "/")
+        lot_commune = strip_accents(lot_commune).upper().strip() if lot_commune != "/" else commune
+        budget = parse_budget(lot.get("budget"))
+        if budget == "/" and single:
+            # The notice-level amount only belongs to the row when there is a single lot;
+            # with several lots it is a total and must never be copied onto one lot.
+            budget = parse_budget(item.get("montant"))
+        attr_par = lot.get("entreprise_attributaire", "/")
+        if attr_par == "/":
+            attr_par = (item.get("entreprise_concernee") or "").strip() or "/"
+        delai = normalize_delai(lot.get("delai")) if lot.get("delai", "/") != "/" else item_delai
+
+        row = [
+            sheet_text(date_col_val),                                   # DATE
+            lot_action if lot_action != "TRAVAUX" else action,          # TITRE D'AVIS D'ATTRIBUTION
+            1,                                                          # Nombre de projet
+            lot_ptype if lot_ptype not in GENERIC_PTYPES else ptype,    # TYPE DE PROJET
+            sheet_text(dt_parution_ao),                                 # DATE DE PARUTION (AO, from the paragraph)
+            sheet_text(dt_echeance),                                    # DATE D'ECHEANCE
+            ann_val,                                                    # ANNONCEUR
+            wilaya or "/",                                              # WILAYA
+            lot_commune,                                                # COMMUNE
+            sheet_text(dt_parution),                                    # DATE D'ATTRIBUTION
+            budget,                                                     # BUDGET
+            attr_par,                                                   # ATTRIBUTION PAR
+            delai or "/",                                               # DELAI
+            "/",                                                        # WILAYA 2
+            scan_link,                                                  # SCANS
+        ]
+        key = aa_dedup_key(_norm_key(wilaya), _norm_key(lot_commune), _budget_key(budget),
+                           _norm_key(attr_par if attr_par != "/" else ""), normalize_date_key(dt_parution))
+        rows.append((row, key))
+    return rows
+
+def open_worksheet(notice_type: str, sheet_id: str | None = None):
+    """Return (worksheet, status) where status is 'ok', 'no_creds' or 'error'."""
     sheet_id = sheet_id or os.getenv("GOOGLE_SHEET_ID", "1y5-OxNeL_zBhCUNNEVoh1nKZVsyBYrq5EJcgKBEt920")
     if not sheet_id:
         log.info("No GOOGLE_SHEET_ID configured -- skipping Google Sheet sync.")
-        return 0
+        return None, "no_creds"
 
     sa_json_env = os.getenv("GCP_SERVICE_ACCOUNT_KEY")
     sa_file = SCRIPT_DIR / "state" / "service_account.json"
@@ -653,278 +1180,102 @@ def append_to_gsheet(results: list[dict], notice_type: str, sheet_id: str | None
             log.info("Authenticated with Google via GCP_SERVICE_ACCOUNT_KEY env var")
         except Exception as e:
             log.error("Failed to authenticate with GCP_SERVICE_ACCOUNT_KEY: %s", e)
+            return None, "error"
     elif sa_file.exists():
         try:
             gc = gspread.service_account(filename=str(sa_file))
             log.info("Authenticated with Google via state/service_account.json")
         except Exception as e:
             log.error("Failed to authenticate with service_account.json: %s", e)
+            return None, "error"
 
     if not gc:
         log.info("No Google service account credentials found -- skipping Google Sheet sync.")
-        return 0
+        return None, "no_creds"
 
     try:
         sh = gc.open_by_key(sheet_id)
         log.info("Opened Google Sheet: %s", sh.title)
     except Exception as e:
-        log.warning("Could not access Google Sheet '%s': %s", sheet_id, e)
-        log.warning(">> Please ensure you clicked 'Share' on the Google Sheet and added:")
-        log.warning(">> algeriemarches-bot@project-df86d806-9e9d-42be-a7d.iam.gserviceaccount.com as Editor!")
-        return 0
+        log.error("Could not access Google Sheet '%s': %s", sheet_id, e)
+        log.error(">> Please ensure you clicked 'Share' on the Google Sheet and added:")
+        log.error(">> algeriemarches-bot@project-df86d806-9e9d-42be-a7d.iam.gserviceaccount.com as Editor!")
+        return None, "error"
 
     target_title = "APPEL D'OFFRE 2026" if notice_type == "appels-doffres" else "AVIS D'ATTRIBUTIONS 2026"
-    target_ws = None
     for ws in sh.worksheets():
         if ws.title.strip().upper() == target_title.upper():
-            target_ws = ws
-            break
+            log.info("Target Google Sheet worksheet: %s", ws.title)
+            return ws, "ok"
+    log.error("Worksheet '%s' not found in Google Sheet", target_title)
+    return None, "error"
 
-    if not target_ws:
-        log.warning("Worksheet '%s' not found in Google Sheet", target_title)
-        return 0
+def append_to_gsheet(results: list[dict], notice_type: str, sheet_id: str | None = None, worksheet=None) -> int:
+    """
+    Write new results to the matching worksheet in Google Sheet.
+    - notice_type 'appels-doffres' -> 'APPEL D'OFFRE 2026' (one row per notice, data from column C)
+    - notice_type 'avis-attribution' -> 'AVIS D'ATTRIBUTIONS 2026' (one row per in-scope lot, from column A)
+    Returns the number of rows written, 0 when Sheets is not configured, -1 on failure.
+    """
+    ws = worksheet
+    if ws is None:
+        ws, status = open_worksheet(notice_type, sheet_id)
+        if ws is None:
+            return 0 if status == "no_creds" else -1
 
-    log.info("Target Google Sheet worksheet: %s", target_ws.title)
+    state = read_sheet_state(ws, notice_type)
+    if state is None:
+        return -1
+    log.info("Google Sheet '%s' has %d rows (last N°: %d, tracked IDs: %d)",
+             ws.title, state["n_rows"] - 3, state["last_num"], len(state["ids"]))
 
-    try:
-        header_col = "L3" if notice_type == "appels-doffres" else "P3"
-        header_val = target_ws.acell(header_col).value
-        if header_val != "SCANS":
-            target_ws.update(header_col, [["SCANS"]])
-            log.info("Added SCANS column header to %s in %s", target_ws.title, header_col)
-    except Exception as e:
-        log.debug("Header check notice: %s", e)
-
-    try:
-        all_values = target_ws.get_all_values()
-        all_formulas = target_ws.get_all_values(value_render_option="FORMULA")
-    except Exception as e:
-        log.error("Failed to read values from Google Sheet: %s", e)
-        return 0
-
-    # Determine column offset (e.g. if sheet has empty leading columns like Col A, B in APPEL D'OFFRE)
-    header_row = all_values[2] if len(all_values) > 2 else []
-    col_offset = 0
-    for c_idx, cell in enumerate(header_row):
-        if "N°" in str(cell).upper() or str(cell).strip().upper() == "N°":
-            col_offset = c_idx
-            break
-
-    last_num = 0
-    existing_items = set()
-    existing_ad_ids = set()
-
-    for idx, (row, frow) in enumerate(zip(all_values, all_formulas)):
-        if idx < 3: # Skip title & header rows
-            continue
-
-        # Extract any 5-6 digit notice IDs from formulas and values across all cells
-        for cell in list(row) + list(frow):
-            for mid in re.findall(r'/(\d{5,6})(?:/|"|\.|$)', str(cell)):
-                existing_ad_ids.add(mid)
-
-        num_val = str(row[col_offset]).strip() if len(row) > col_offset else ""
-        if num_val:
-            try:
-                n = int(num_val)
-                if n > last_num:
-                    last_num = n
-            except Exception:
-                pass
-
-        if notice_type == "appels-doffres":
-            action = row[col_offset + 2].strip().upper() if len(row) > col_offset + 2 else ""
-            t_proj = row[col_offset + 4].strip().upper() if len(row) > col_offset + 4 else ""
-            wilaya = row[col_offset + 8].strip().upper() if len(row) > col_offset + 8 else ""
-            commune = row[col_offset + 9].strip().upper() if len(row) > col_offset + 9 else ""
-            r_parution = normalize_date_key(row[col_offset + 5]) if len(row) > col_offset + 5 else ""
-            if not r_parution and len(row) > col_offset + 1:
-                r_parution = normalize_date_key(row[col_offset + 1])
-            r_echeance = normalize_date_key(row[col_offset + 6]) if len(row) > col_offset + 6 else ""
-
-            norm_w = re.sub(r"[^A-Z0-9]", "", strip_accents(wilaya).upper())
-            norm_c = re.sub(r"[^A-Z0-9]", "", strip_accents(commune).upper())
-
-            if norm_w:
-                if r_parution:
-                    existing_items.add(("AO_PARUTION", action, t_proj, norm_w, norm_c, r_parution))
-                if r_echeance:
-                    existing_items.add(("AO_ECHEANCE", norm_w, norm_c, r_echeance))
-                if not r_parution and not r_echeance:
-                    existing_items.add(("AO_NODATE", action, t_proj, norm_w, norm_c))
-        else:
-            attr_par = row[col_offset + 12].strip().upper() if len(row) > col_offset + 12 else ""
-            wilaya = row[col_offset + 8].strip().upper() if len(row) > col_offset + 8 else ""
-            t_proj = row[col_offset + 4].strip().upper() if len(row) > col_offset + 4 else ""
-            action = row[col_offset + 2].strip().upper() if len(row) > col_offset + 2 else ""
-            commune = row[col_offset + 9].strip().upper() if len(row) > col_offset + 9 else ""
-            montant_cell = str(row[col_offset + 11]).strip() if len(row) > col_offset + 11 else ""
-            if attr_par:
-                existing_items.add((attr_par, wilaya, t_proj))
-            if action and t_proj and wilaya:
-                existing_items.add(("ALT", action, t_proj, wilaya, commune, montant_cell))
-            norm_w = re.sub(r"[^A-Z0-9]", "", strip_accents(wilaya).upper())
-            norm_c = re.sub(r"[^A-Z0-9]", "", strip_accents(commune).upper())
-            if norm_w and norm_c and montant_cell and montant_cell != "/":
-                existing_items.add(("NORM_LOC", norm_w, norm_c, montant_cell))
-
-    log.info("Google Sheet '%s' has %d rows (last N°: %d, tracked IDs: %d)", target_ws.title, len(all_values) - 3, last_num, len(existing_ad_ids))
-
-    rows_to_append = []
     today_str = datetime.now().strftime("%Y-%m-%d")
+    last_num = state["last_num"]
+    new_rows = []
 
     for item in results:
-        titre = item.get("titre", "")
-        annonceur = item.get("annonceur", "")
-        action = item.get("action") or classify_action(titre)
-        ptype = item.get("ptype") or classify_type_projet(titre)
-        wilaya = (item.get("wilaya") or "").strip().upper()
-        commune = item.get("commune") if (item.get("commune") and item.get("commune") != "/") else parse_commune(titre, annonceur)
-        ann_val = clean_annonceur(annonceur)
-
-        dt_parution = str(item.get("date_parution", ""))[:10] or "/"
-        dt_echeance = str(item.get("date_echeance", ""))[:10] or "/"
-
         ann_id = str(item.get("id", "") or item.get("id_annonce", "")).strip()
-
-        # ── Primary deduplication by Notice ID ──
-        if ann_id and ann_id in existing_ad_ids:
-            log.info("  Notice ID %s already in Google Sheet '%s' -- skipping duplicate!", ann_id, target_ws.title)
+        if ann_id and ann_id in state["ids"]:
+            log.info("  Notice ID %s already in Google Sheet '%s' -- skipping duplicate!", ann_id, ws.title)
             continue
 
-        scans_list = item.get("scans", [])
-        if scans_list and ann_id and dt_parution != "/":
-            scan_names = [Path(s).name for s in scans_list]
-            repo_base = "https://github.com/bronsonclaudia3-png/algeriemarches-scraper"
-            if len(scan_names) == 1:
-                scan_link = f'=HYPERLINK("{repo_base}/blob/main/data/scans/{dt_parution}/{ann_id}/{scan_names[0]}", "📄 Voir Scan")'
-            else:
-                scan_link = f'=HYPERLINK("{repo_base}/tree/main/data/scans/{dt_parution}/{ann_id}", "📁 Voir {len(scan_names)} Scans")'
-        else:
-            scan_link = "/"
-
-        norm_w = re.sub(r"[^A-Z0-9]", "", strip_accents(wilaya).upper())
-        norm_c = re.sub(r"[^A-Z0-9]", "", strip_accents(commune).upper())
-
         if notice_type == "appels-doffres":
-            item_parution = normalize_date_key(dt_parution)
-            item_echeance = normalize_date_key(dt_echeance)
-
-            is_dup = False
-            if item_parution and ("AO_PARUTION", action.upper(), ptype.upper(), norm_w, norm_c, item_parution) in existing_items:
-                is_dup = True
-            elif item_echeance and ("AO_ECHEANCE", norm_w, norm_c, item_echeance) in existing_items:
-                is_dup = True
-            elif not item_parution and not item_echeance and ("AO_NODATE", action.upper(), ptype.upper(), norm_w, norm_c) in existing_items:
-                is_dup = True
-
-            if is_dup:
-                log.info("  Already in Google Sheet (AO): %s | %s (%s, %s)", action, ptype, wilaya, commune)
-                continue
-
-            last_num += 1
-            if item_parution:
-                existing_items.add(("AO_PARUTION", action.upper(), ptype.upper(), norm_w, norm_c, item_parution))
-            if item_echeance:
-                existing_items.add(("AO_ECHEANCE", norm_w, norm_c, item_echeance))
-            if ann_id:
-                existing_ad_ids.add(ann_id)
-
-            date_col_val = format_date_dmy(dt_parution if dt_parution != "/" else today_str)
-            dt_par_val = format_date_dmy(dt_parution)
-            dt_ech_val = format_date_dmy(dt_echeance)
-
-            row_data = ([''] * col_offset) + [
-                last_num,                                # Col 1: N°
-                date_col_val,                            # Col 2: DATE (aligns with publication date)
-                action,                                  # Col 3: TITRE D'APPEL D'OFFRE
-                1,                                       # Col 4: Nombre de projet
-                ptype,                                   # Col 5: TYPE DE PROJET
-                dt_par_val,                              # Col 6: DATE DE PARUTION
-                dt_ech_val,                              # Col 7: DATE D'ECHEANCE
-                ann_val,                                 # Col 8: ANNONCEUR
-                wilaya if wilaya else "/",               # Col 9: WILAYA
-                commune,                                 # Col 10: COMMUNE
-                "TRAVAUX PUBLICS",                       # Col 11: CATEGORIE
-                scan_link,                               # Col 12: SCANS
-            ]
-            rows_to_append.append(row_data)
+            row, ad_keys = build_ao_row(item, today_str)
+            built = [(row, None)]
         else:
-            attr_par = item.get("entreprise_concernee", "").strip()
-            budget = parse_budget(item.get("montant", "")) if item.get("montant") else "/"
-            dedup_key = (attr_par.upper(), wilaya, ptype.upper())
-            dedup_key_alt = ("ALT", action.upper(), ptype.upper(), wilaya, commune.upper(), str(budget).strip())
-            norm_loc = ("NORM_LOC", norm_w, norm_c, str(budget).strip()) if (norm_w and norm_c and str(budget).strip() != "/") else None
+            built = build_aa_rows(item, today_str)
+            ad_keys = [k for _, k in built if k]
 
-            is_dup = False
-            if attr_par != "" and dedup_key in existing_items:
-                is_dup = True
-            elif dedup_key_alt in existing_items and str(budget).strip() != "/":
-                is_dup = True
-            elif norm_loc and norm_loc in existing_items:
-                is_dup = True
-            elif str(budget).strip() == "/" and attr_par == "" and ("ALT", action.upper(), ptype.upper(), wilaya, commune.upper(), "/") in existing_items:
-                is_dup = True
+        # Deduplicate per notice: lots of the same award never block each other
+        if any(k in state["items"] for k in ad_keys):
+            log.info("  Already in Google Sheet: %s (%s, %s)", item.get("titre", "")[:50], item.get("wilaya"), item.get("commune"))
+            continue
 
-            if is_dup:
-                log.info("  Already in Google Sheet (AA): %s (%s, budget: %s)", attr_par[:30] or commune, wilaya, budget)
-                continue
-
+        for row, _ in built:
             last_num += 1
-            if attr_par:
-                existing_items.add(dedup_key)
-            existing_items.add(dedup_key_alt)
-            if norm_loc:
-                existing_items.add(norm_loc)
-            if ann_id:
-                existing_ad_ids.add(ann_id)
+            new_rows.append([last_num] + row)
+        state["items"].update(ad_keys)
+        if ann_id:
+            state["ids"].add(ann_id)
 
-            delai = item.get("delai") or parse_delai(item.get("nbr_jours", 0), item.get("description", ""))
+    if not new_rows:
+        log.info("No new rows needed for Google Sheet '%s' (all up to date)", ws.title)
+        return 0
 
-            date_col_val = dt_parution if dt_parution != "/" else today_str
-            # Col 6: Must strictly be the original AO publication date from INSIDE the text paragraph. Never the bottom date.
-            dt_parution_ao = str(item.get("date_parution_ao", "")).strip() or "/"
-            if dt_parution_ao != "/":
-                ym = re.search(r'\b(20\d{2})\b', dt_parution_ao)
-                if ym:
-                    y = int(ym.group(1))
-                    if y < 2025 or y > 2026:
-                        log.warning("Discarding invented/invalid date_parution_ao '%s' (year %d)", dt_parution_ao, y)
-                        dt_parution_ao = "/"
-                else:
-                    dt_parution_ao = "/"
-
-            row_data = ([''] * col_offset) + [
-                last_num,                                # Col 1: N°
-                date_col_val,                            # Col 2: DATE (aligns with publication date)
-                action,                                  # Col 3: TITRE D'AVIS D'ATTRIBUTION
-                1,                                       # Col 4: Nombre de projet
-                ptype,                                   # Col 5: TYPE DE PROJET
-                dt_parution_ao,                          # Col 6: DATE DE PARUTION (from inside paragraph or '/')
-                dt_echeance,                             # Col 7: DATE D'ECHEANCE
-                ann_val,                                 # Col 8: ANNONCEUR
-                wilaya if wilaya else "/",               # Col 9: WILAYA
-                commune,                                 # Col 10: COMMUNE
-                dt_parution,                             # Col 11: DATE D'ATTRIBUTION
-                budget,                                  # Col 12: BUDGET
-                attr_par if attr_par else "/",           # Col 13: ATTRIBUTION PAR
-                delai,                                   # Col 14: DELAI
-                "/",                                     # Col 15: WILAYA 2
-                scan_link,                               # Col 16: SCANS
-            ]
-            rows_to_append.append(row_data)
-
-    if rows_to_append:
-        try:
-            target_ws.append_rows(rows_to_append, value_input_option="USER_ENTERED")
-            log.info("Successfully appended %d new rows to Google Sheet '%s'", len(rows_to_append), target_ws.title)
-        except Exception as e:
-            log.error("Failed to append rows to Google Sheet: %s", e)
-            return 0
-    else:
-        log.info("No new rows needed for Google Sheet '%s' (all up to date)", target_ws.title)
-
-    return len(rows_to_append)
+    # Write to an explicit range starting at the N° column. values.append() detected the table at
+    # column C and then shifted the blank-padded AO rows two columns right (row 259, Oct 2026).
+    start_row = state["n_rows"] + 1
+    end_row = start_row + len(new_rows) - 1
+    try:
+        if end_row > ws.row_count:
+            ws.add_rows(end_row - ws.row_count)
+        ws.update(values=new_rows, range_name=rowcol_to_a1(start_row, state["col_offset"] + 1),
+                  value_input_option="USER_ENTERED")
+        log.info("Successfully wrote %d new rows to Google Sheet '%s' (rows %d-%d)", len(new_rows), ws.title, start_row, end_row)
+    except Exception as e:
+        log.error("Failed to write rows to Google Sheet: %s", e)
+        return -1
+    return len(new_rows)
 
 # ── Daily Scans Summary Generator ────────────────────────────────────────────
 
@@ -933,7 +1284,7 @@ def generate_daily_scans_summary(all_results: list[dict]) -> list[Path]:
     by_date: dict[str, list[dict]] = {}
     today_str = datetime.now().strftime("%Y-%m-%d")
     for r in all_results:
-        d = str(r.get("date_parution") or today_str)[:10]
+        d = to_local_date(r.get("date_parution")) or today_str
         by_date.setdefault(d, []).append(r)
 
     generated = []
@@ -943,7 +1294,7 @@ def generate_daily_scans_summary(all_results: list[dict]) -> list[Path]:
         md_file = day_dir / "README.md"
         lines = [
             f"# 📰 Newspaper Scans Gallery — {d_str}\n",
-            "> Scans downloaded & OCR-analyzed with Gemini 2.5 Flash for TAPIDOR\n",
+            "> Scans downloaded & OCR-analyzed (NVIDIA NIM / Gemini) for TAPIDOR\n",
             "| N° | Ad ID | Type | Action & Facility | Wilaya | Commune | Budget | Délai | Scans |",
             "| :---: | :---: | :---: | :--- | :---: | :---: | :---: | :---: | :---: |"
         ]
@@ -970,7 +1321,7 @@ def generate_daily_scans_summary(all_results: list[dict]) -> list[Path]:
         date_dirs.sort(key=lambda d: d.name, reverse=True)
         root_lines = [
             "# 🗂️ AlgerieMarches Daily Scans Archive\n",
-            "> Central archive of newspaper scans downloaded and OCR-analyzed by Gemini 2.5 Flash for TAPIDOR.\n",
+            "> Central archive of newspaper scans downloaded and OCR-analyzed (NVIDIA NIM / Gemini) for TAPIDOR.\n",
             "| Date | Matched Ads | Gallery Link |",
             "| :---: | :---: | :---: |"
         ]
@@ -983,6 +1334,36 @@ def generate_daily_scans_summary(all_results: list[dict]) -> list[Path]:
         log.warning("Could not update root scans README: %s", e)
 
     return generated
+
+# ── Verdict cache ────────────────────────────────────────────────────────────
+
+def load_verdicts(path: Path = VERDICTS_FILE) -> dict:
+    """{notice_id: {"verdict": "match"|"reject", "v": VERDICTS_VERSION, "checked": date, ...}}"""
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except FileNotFoundError:
+        return {}
+    except Exception as e:
+        log.warning("Could not read %s (%s) -- starting with an empty verdict cache", path.name, e)
+        return {}
+
+def save_verdicts(verdicts: dict, path: Path = VERDICTS_FILE) -> None:
+    cutoff = (datetime.now() - timedelta(days=VERDICTS_MAX_AGE_DAYS)).strftime("%Y-%m-%d")
+    kept = {k: v for k, v in verdicts.items() if isinstance(v, dict) and v.get("checked", "") >= cutoff}
+    try:
+        path.write_text(json.dumps(kept, ensure_ascii=False, indent=1, sort_keys=True), encoding="utf-8")
+    except Exception as e:
+        log.warning("Could not save %s: %s", path.name, e)
+
+def cached_verdict(verdicts: dict, ann_id: str) -> dict | None:
+    entry = verdicts.get(ann_id)
+    if isinstance(entry, dict) and entry.get("v") == VERDICTS_VERSION:
+        return entry
+    return None
+
+class ListingFetchError(RuntimeError):
+    """A listing page could not be fetched after all retries."""
 
 # ── Main Scraper Class ───────────────────────────────────────────────────────
 
@@ -998,6 +1379,10 @@ class AlgerieMarchesScraper:
         })
         self._load_cookies()
         self.drive_mgr = GoogleDriveManager()
+        self.failures: list[str] = []
+        self.unverified: list[str] = []
+        self.ad_errors = 0
+        self._session_refreshed = False
 
     # ── Cookie persistence ───────────────────────────────────────────────────
 
@@ -1209,21 +1594,34 @@ class AlgerieMarchesScraper:
             params["type"] = "avis-attribution"
             params["avis"] = "true"
 
-        # Try API_BASE first, fallback to API_PROXY
-        for endpoint in [f"{API_BASE}/ads/all", API_PROXY]:
-            try:
-                r = self.s.get(endpoint, params=params, timeout=30)
-                if r.status_code == 200:
-                    data = r.json()
-                    return data.get("data", []) if isinstance(data, dict) else []
-            except Exception as e:
-                log.warning("Fetch listings from %s failed: %s", endpoint, e)
+        # Try API_BASE first, fallback to API_PROXY; retry the pair with backoff.
+        # An empty list is only returned when the API really answered with no data.
+        last_error = ""
+        for attempt in range(LISTING_RETRIES):
+            for endpoint in [f"{API_BASE}/ads/all", API_PROXY]:
+                try:
+                    r = self.s.get(endpoint, params=params, timeout=30)
+                    if r.status_code == 200:
+                        data = r.json()
+                        if isinstance(data, dict) and isinstance(data.get("data"), list):
+                            return data["data"]
+                        last_error = f"{endpoint}: unexpected payload {str(data)[:80]}"
+                    else:
+                        last_error = f"{endpoint}: HTTP {r.status_code}"
+                except Exception as e:
+                    last_error = f"{endpoint}: {e}"
+            log.warning("Listing page %d (%s) failed, attempt %d/%d: %s",
+                        page, notice_type, attempt + 1, LISTING_RETRIES, last_error)
+            if attempt + 1 < LISTING_RETRIES:
+                time.sleep(LISTING_RETRY_DELAY * (attempt + 1))
 
-        return []
+        raise ListingFetchError(f"{notice_type} page {page}: {last_error}")
 
     def fetch_detail(self, slug: str) -> dict:
         url = f"{BASE_URL}/annonces/{slug}"
         r = self.s.get(url, headers={"Accept": "text/html"}, timeout=40, allow_redirects=True)
+        if r.status_code != 200:
+            return {"_error": f"HTTP {r.status_code}"}
         html = r.text
 
         if "manage-sessions" in html[:5000]:
@@ -1248,7 +1646,7 @@ class AlgerieMarchesScraper:
                 ad = json.loads(unescaped[start:end])
                 result["id_annonce"] = ad.get("id_annonce", "")
                 result["titre_detail"] = ad.get("titre", "")
-                result["date_parution"] = str(ad.get("date_parution", ""))[:10]
+                result["date_parution"] = to_local_date(ad.get("date_parution"))
                 result["meta_description"] = ad.get("meta_description", "")
                 result["wilaya"] = (ad.get("wilaya") or {}).get("nom_fr", "")
                 result["type_annonce"] = (ad.get("type_annonce") or {}).get("type_annonce_fr", "")
@@ -1257,7 +1655,7 @@ class AlgerieMarchesScraper:
                 annonceurs = ad.get("annonceurs") or {}
                 result["annonceur"] = annonceurs.get("annonceur") or ad.get("adresse_annonceur") or ""
                 result["code_annonce"] = ad.get("code_annonce") or ""
-                result["date_echeance"] = str(ad.get("date_echeance", ""))[:10] if ad.get("date_echeance") else ""
+                result["date_echeance"] = to_local_date(ad.get("date_echeance"))
                 result["entreprise_concernee"] = ad.get("entreprise_concerne") or ""
                 result["anep"] = ad.get("anep") or ""
                 result["description"] = ad.get("description") or ""
@@ -1274,7 +1672,7 @@ class AlgerieMarchesScraper:
         if m and not result.get("code_annonce"):
             result["code_annonce"] = m.group(1).strip()
 
-        m = re.search(r"Date d.{1,5}ch[eé]ance.*?(\d{4}-\d{2}-\d{2})", unescaped, re.DOTALL)
+        m = re.search(r"Date d.{1,5}ch[eé]ance.{0,300}?(\d{4}-\d{2}-\d{2})", unescaped, re.DOTALL)
         if m and not result.get("date_echeance"):
             result["date_echeance"] = m.group(1)
 
@@ -1282,11 +1680,11 @@ class AlgerieMarchesScraper:
         if m and m.group(1).strip() and not result.get("entreprise_concernee"):
             result["entreprise_concernee"] = m.group(1).strip()
 
-        # Montant extraction
+        # Montant extraction: one amount, never digits glued across dates or lot numbers
         combined_text = f"{result.get('description', '')} {result.get('entreprise_concernee', '')}"
-        m_montant = re.search(r'(\d[\d\s,.]*\s*(?:DA|DZD|dinars?))\b', combined_text, re.IGNORECASE)
-        if m_montant:
-            result["montant"] = m_montant.group(1).strip()
+        montant = extract_amount(combined_text)
+        if montant is not None:
+            result["montant"] = montant
 
         return result
 
@@ -1315,7 +1713,7 @@ class AlgerieMarchesScraper:
 
         # 2. Extract from ad dictionary fields (image_principale, pdf, document, etc.)
         ann_id = str(ad_item.get("id_annonce", "")).strip()
-        date_val = str(ad_item.get("date_parution", ""))[:10]
+        date_val = to_local_date(ad_item.get("date_parution"))
         try:
             dt = datetime.strptime(date_val, "%Y-%m-%d")
             y, m, d = dt.year, dt.month, dt.day
@@ -1351,215 +1749,315 @@ class AlgerieMarchesScraper:
 
         return unique_urls
 
-    def scrape_notice_type(self, notice_type: str, run_id: str, since_date: str = "") -> list[dict]:
-        """Scrape either 'appels-doffres' or 'avis-attribution' with scan downloads and AI extraction."""
+    def collect_listings(self, notice_type: str, since_date: str = "") -> list[dict]:
+        """All listings published on/after since_date, de-duplicated by notice ID."""
         label = "Appels d'Offres" if notice_type == "appels-doffres" else "Avis d'Attribution"
-        log.info("--- Scraping %s (since date: %s) ---", label, since_date or "any")
+        all_annonces, seen = [], set()
+        max_pages = MAX_PAGES_CATCHUP if since_date else MAX_PAGES
+        reached_end = not since_date
 
-        all_annonces = []
-        max_pages_limit = 50 if since_date else MAX_PAGES
-
-        for page in range(1, max_pages_limit + 1):
-            listings = self.fetch_listings(page, notice_type=notice_type)
+        for page in range(1, max_pages + 1):
+            try:
+                listings = self.fetch_listings(page, notice_type=notice_type)
+            except ListingFetchError as e:
+                msg = f"{label} crawl stopped at page {page} -- {e}"
+                log.error(msg)
+                self.failures.append(msg)
+                return all_annonces
             if not listings:
-                log.info("  Page %d: 0 listings -- stopping", page)
+                log.info("  Page %d: 0 listings -- end of results", page)
+                reached_end = True
                 break
 
-            page_dates = [str(a.get("date_parution", ""))[:10] for a in listings if a.get("date_parution")]
+            page_dates = [d for d in (to_local_date(a.get("date_parution")) for a in listings) if d]
             log.info("  Page %d: %d listings (dates: %s to %s)",
                      page, len(listings), max(page_dates) if page_dates else "?", min(page_dates) if page_dates else "?")
 
-            if since_date:
-                valid_on_page = [a for a in listings if str(a.get("date_parution", ""))[:10] >= since_date]
-                all_annonces.extend(valid_on_page)
-                if any(str(a.get("date_parution", ""))[:10] < since_date for a in listings):
-                    log.info("  Reached ads older than cutoff %s at page %d -- stopping pagination", since_date, page)
-                    break
-            else:
-                all_annonces.extend(listings)
+            for a in listings:
+                ann_id = str(a.get("id_annonce", "")).strip()
+                if ann_id and ann_id in seen:
+                    continue  # pages shift while new notices are published during the crawl
+                d = to_local_date(a.get("date_parution"))
+                if since_date and d and d < since_date:
+                    continue
+                if ann_id:
+                    seen.add(ann_id)
+                all_annonces.append(a)
 
+            # Listings come newest first: stop once a whole page is older than the cutoff
+            if since_date and page_dates and max(page_dates) < since_date:
+                log.info("  Page %d is entirely older than cutoff %s -- stopping pagination", page, since_date)
+                reached_end = True
+                break
             time.sleep(0.4)
 
-        log.info("Total %s fetched (>= %s): %d", label, since_date or "all", len(all_annonces))
+        if not reached_end:
+            msg = (f"{label}: hit the {max_pages}-page cap before reaching {since_date} -- "
+                   f"older notices in the window were not crawled")
+            log.error(msg)
+            self.failures.append(msg)
+        return all_annonces
 
-        # Filter by domain keywords (titre + description) with negative exclusions
-        filtered = []
-        for a in all_annonces:
-            t = str(a.get("titre") or "")
-            d = str(a.get("description") or "")
-            combined = f"{t} {d}".strip()
-
-            if not KEYWORD_FILTER.search(combined):
-                continue
-
-            # If explicit gazon keyword in title or description, always include!
-            if GAZON_EXPLICIT_KEYWORDS.search(combined):
-                filtered.append(a)
-            # If matched general keywords (stade, terrain, etc.) but has exclusions, skip!
-            elif NON_GAZON_EXCLUSIONS.search(combined):
-                log.info("  -> Pre-filter excluded non-gazon notice: %s", t[:70])
-                continue
-            else:
-                filtered.append(a)
-        log.info("After TAPIDOR gazon-exclusive filter: %d matching %s", len(filtered), label)
-
-        today_str = datetime.now().strftime("%Y-%m-%d")
-        results = []
-
-        for a in filtered:
-            ann_id = str(a.get("id_annonce", ""))
-            slug = a.get("slug", "")
-            titre = a.get("titre", "")
-            raw_date = str(a.get("date_parution", ""))[:10] or today_str
-
-            detail = {}
-            for attempt in range(2):
+    def fetch_detail_with_retry(self, slug: str) -> dict:
+        """Detail page data, re-authenticating once per run if the session got blocked; {} on failure."""
+        if not slug:
+            return {}
+        detail = {}
+        for attempt in range(3):
+            try:
+                detail = self.fetch_detail(slug)
+            except Exception as e:
+                log.warning("  -> Detail page %s failed (attempt %d): %s", slug[:40], attempt + 1, e)
+                detail = {}
+            if detail and not detail.get("_error"):
+                return detail
+            if detail.get("_error") == "SESSION_BLOCKED" and not self._session_refreshed:
+                log.warning("  -> Session blocked on detail page -- re-authenticating once")
+                self._session_refreshed = True
                 try:
-                    detail = self.fetch_detail(slug) if slug else {}
-                    if detail and not detail.get("_error"):
-                        break
+                    self.ensure_session()
                 except Exception as e:
-                    time.sleep(2)
+                    log.warning("  -> Re-authentication failed: %s", e)
+                continue
+            time.sleep(2 * (attempt + 1))
+        log.warning("  -> Using listing data only for %s (%s)", slug[:40], detail.get("_error", "no detail"))
+        return {}
 
-            # ── 1. Download Attached Scans & Upload to Google Drive ──
-            scan_urls = self.get_scan_urls(a, detail.get("_html", ""))
-            target_date = detail.get("date_parution") or raw_date
-            ad_scan_dir = SCANS_DIR / target_date / ann_id
-            ad_scan_dir.mkdir(parents=True, exist_ok=True)
-            downloaded_scans = []
+    def download_scans(self, ad_item: dict, detail: dict, ann_id: str, target_date: str) -> list[Path]:
+        scan_urls = self.get_scan_urls(ad_item, detail.get("_html", ""))
+        if not scan_urls or not ann_id:
+            return []
+        ad_scan_dir = SCANS_DIR / target_date / ann_id
+        ad_scan_dir.mkdir(parents=True, exist_ok=True)
+        downloaded = []
 
-            for u in scan_urls:
-                fname = u.split("/")[-1].split("?")[0]
-                local_fp = ad_scan_dir / fname
-                if not local_fp.exists():
+        for u in scan_urls:
+            fname = u.split("/")[-1].split("?")[0]
+            local_fp = ad_scan_dir / fname
+            if not local_fp.exists():
+                for attempt in range(2):
                     try:
                         img_r = self.s.get(u, timeout=30)
-                        if img_r.status_code == 200:
+                        if img_r.status_code == 200 and img_r.content:
                             local_fp.write_bytes(img_r.content)
                             log.info("  -> Downloaded scan: %s (%d bytes)", fname, len(img_r.content))
+                            break
+                        log.warning("  -> Scan %s returned HTTP %d", fname, img_r.status_code)
+                        if img_r.status_code == 404:
+                            break
                     except Exception as e:
                         log.warning("  -> Failed to download scan %s: %s", u, e)
+                    time.sleep(2)
 
-                if local_fp.exists() and local_fp not in downloaded_scans:
-                    downloaded_scans.append(local_fp)
-                    # Attempt Drive upload
-                    if self.drive_mgr:
-                        self.drive_mgr.upload_scan(local_fp, target_date)
+            if local_fp.exists() and local_fp not in downloaded:
+                downloaded.append(local_fp)
+                # Attempt Drive upload
+                if self.drive_mgr:
+                    self.drive_mgr.upload_scan(local_fp, target_date)
 
-            # ── 2. AI Scan Vision (NVIDIA NIM / Gemini OCR) ───────────
-            ai_data = {}
-            if downloaded_scans and (NVIDIA_API_KEY or GEMINI_API_KEY):
-                engine_name = f"NVIDIA NIM ({NVIDIA_MODEL})" if NVIDIA_API_KEY else "Gemini"
-                log.info("  -> Scanning attached newspaper file (%s) with %s...", downloaded_scans[0].name, engine_name)
-                try:
-                    ai_data = analyze_scan(downloaded_scans[0].read_bytes())
-                    # If first scan did not contain budget/attribution and multiple pages exist, inspect second scan
-                    if len(downloaded_scans) > 1 and (not ai_data.get("budget") or ai_data.get("budget") == "/"):
-                        log.info("  -> Checking second scan page (%s) for complementary table data...", downloaded_scans[1].name)
-                        ai_data_p2 = analyze_scan(downloaded_scans[1].read_bytes())
-                        for k, v in ai_data_p2.items():
-                            if v and v != "/" and (not ai_data.get(k) or ai_data.get(k) == "/"):
-                                ai_data[k] = v
-                except Exception as e:
-                    log.warning("  -> AI Vision analysis error: %s", e)
+        if not downloaded:
+            shutil.rmtree(ad_scan_dir, ignore_errors=True)
+        return downloaded
 
-            # ── 2.1 Gazon Scope Gate ────────────────────────────────
-            combined_text = f"{titre} {detail.get('description', '')} {a.get('description', '')}"
-            has_explicit_gazon = bool(GAZON_EXPLICIT_KEYWORDS.search(combined_text))
+    def read_scans(self, scans: list[Path], need_scope: bool, want_award_data: bool):
+        """
+        OCR the scan pages (up to MAX_SCAN_PAGES), reading further pages only while something is missing.
+        Returns merged AI data, {} when every engine failed, or None when OCR was not attempted.
+        """
+        if not scans or not (NVIDIA_API_KEY or GEMINI_API_KEY):
+            return None
+        ai, any_read = {}, False
+        for i, fp in enumerate(scans[:MAX_SCAN_PAGES]):
+            if i > 0:
+                missing_scope = need_scope and not ai_confirmed_scope(ai)
+                missing_award = want_award_data and ai.get("budget", "/") == "/" and not ai.get("lots")
+                if not (missing_scope or missing_award):
+                    break
+            engine = f"NVIDIA NIM ({NVIDIA_MODEL})" if NVIDIA_API_KEY and not _nvidia_state["disabled"] else "Gemini"
+            log.info("  -> Scanning attached newspaper file (%s) with %s...", fp.name, engine)
+            try:
+                page = analyze_scan(fp.read_bytes())
+            except Exception as e:
+                log.warning("  -> AI Vision analysis error: %s", e)
+                page = {}
+            any_read = any_read or bool(page)
+            ai = merge_ai_data(ai, page)
+        return ai if any_read else {}
 
-            gazon_mention = str(ai_data.get("gazon_mention", "")).strip() if ai_data else ""
-            ai_has_explicit_evidence = bool(
-                gazon_mention
-                and gazon_mention.upper() != "NONE"
-                and GAZON_EXPLICIT_KEYWORDS.search(gazon_mention)
-            )
+    def process_ad(self, a: dict, notice_type: str, run_id: str, decision: str, text_scope: str | None,
+                   verdicts: dict) -> dict | None:
+        """Fetch, OCR and classify one notice. Returns the result row, or None when it is not for TAPIDOR."""
+        today_str = datetime.now().strftime("%Y-%m-%d")
+        ann_id = str(a.get("id_annonce", "")).strip()
+        slug = a.get("slug", "")
+        titre = a.get("titre", "") or ""
+        raw_date = to_local_date(a.get("date_parution")) or today_str
 
-            if ai_data and ai_data.get("is_gazon") is False:
-                log.info("  -> [REJECTED NON-GAZON] %s (AI confirmed no turf/gazon scope) -- Skipping.", titre[:65])
-                if ad_scan_dir.exists():
-                    shutil.rmtree(ad_scan_dir, ignore_errors=True)
+        detail = self.fetch_detail_with_retry(slug)
+        target_date = detail.get("date_parution") or raw_date
+
+        # ── 1. Download Attached Scans & Upload to Google Drive ──
+        scans = self.download_scans(a, detail, ann_id, target_date)
+
+        # ── 2. Scope gate: explicit text wins; otherwise the scan must name gazon or tapis ──
+        combined_text = f"{titre} {detail.get('description', '')} {a.get('description', '')}"
+        scope = text_scope or detect_scope(combined_text)
+        ai = self.read_scans(scans, need_scope=not scope, want_award_data=(notice_type == "avis-attribution"))
+
+        def reject(reason: str):
+            log.info("  -> [REJECTED] %s (%s) -- Skipping.", titre[:65], reason)
+            if scans:
+                shutil.rmtree(SCANS_DIR / target_date / ann_id, ignore_errors=True)
+            if ann_id:
+                verdicts[ann_id] = {"verdict": "reject", "v": VERDICTS_VERSION, "checked": today_str,
+                                    "type": notice_type, "reason": reason}
+
+        if not scope:
+            scope = ai_confirmed_scope(ai or {})
+            if not scope:
+                if scans and not ai:
+                    # OCR unavailable (rate limits, outage, no key): do not drop the notice for good
+                    log.warning("  -> [UNVERIFIED] %s -- scan could not be read; will retry next run", titre[:65])
+                    self.unverified.append(ann_id or slug)
+                    return None
+                reject("no explicit gazon/tapis in text or scan" if scans else "no explicit gazon/tapis and no scan")
+                return None
+        ai = ai or {}
+
+        # ── 3. Lots: keep the in-scope ones, each becomes its own Sheet row for awards ──
+        lots = ai.get("lots") or []
+        for lot in lots:
+            lot["in_scope"] = bool(lot.get("in_scope") or detect_scope(lot.get("objet", "")))
+        if len(lots) > 1:
+            lots = [lot for lot in lots if lot["in_scope"]] or lots
+
+        # ── 4. Merge Web Data with AI Complementary Data ────────
+        wilaya_val = (
+            detail.get("wilaya")
+            or (a.get("wilaya") or {}).get("nom_fr", "")
+            or (ai.get("wilaya", "/").upper() if ai.get("wilaya", "/") != "/" else "")
+        )
+        annonceur_val = detail.get("annonceur") or (ai.get("annonceur") if ai.get("annonceur", "/") != "/" else "")
+
+        commune_val = parse_commune(titre, annonceur_val)
+        if (commune_val == "/" or len(commune_val) <= 2) and ai.get("commune", "/") != "/":
+            commune_val = strip_accents(ai["commune"]).upper().strip()
+
+        entreprise_val = detail.get("entreprise_concernee", "")
+        if not entreprise_val and ai.get("entreprise_attributaire", "/") != "/":
+            entreprise_val = ai["entreprise_attributaire"]
+
+        montant_val = detail.get("montant", "")
+        if montant_val in ("", None) and ai.get("budget", "/") != "/":
+            montant_val = ai["budget"]
+
+        delai_val = parse_delai(detail.get("nbr_jours", 0), detail.get("description", ""))
+        if delai_val == "/" and ai.get("delai", "/") != "/":
+            delai_val = normalize_delai(ai["delai"])
+
+        action_val = classify_action(titre)
+        if action_val == "TRAVAUX" and ai.get("action", "/") != "/":
+            action_val = classify_action(ai["action"])
+
+        ptype_val = classify_type_projet(titre)
+        if ptype_val in GENERIC_PTYPES:
+            in_scope_objets = [lot.get("objet", "/") for lot in lots if lot.get("in_scope")]
+            for text in in_scope_objets + [ai.get("type_projet", "/"), ai.get("objet_marche", "/")]:
+                if text and text != "/" and classify_type_projet(text) not in GENERIC_PTYPES:
+                    ptype_val = classify_type_projet(text)
+                    break
+
+        row = {
+            "run_id": run_id,
+            "id": ann_id,
+            "slug": slug,
+            "url": f"{BASE_URL}/annonces/{slug}",
+            "titre": titre,
+            "scope": scope,
+            "action": action_val,
+            "ptype": ptype_val,
+            "wilaya": wilaya_val,
+            "commune": commune_val,
+            "date_parution": detail.get("date_parution") or raw_date,
+            "date_parution_ao": ai.get("date_parution_ao", "/"),
+            "date_echeance": detail.get("date_echeance", ""),
+            "type_annonce": notice_type,
+            "annonceur": annonceur_val,
+            "code_annonce": detail.get("code_annonce", ""),
+            "entreprise_concernee": entreprise_val,
+            "montant": montant_val,
+            "delai": delai_val,
+            "lots": lots,
+            "nbr_jours": detail.get("nbr_jours", 0),
+            "scans": [str(p) for p in scans],
+            "scraped_at": datetime.now().isoformat(),
+        }
+        if ann_id:
+            verdicts[ann_id] = {"verdict": "match", "v": VERDICTS_VERSION, "checked": today_str,
+                                "type": notice_type, "row": row}
+        log.info("  [MATCH %s] %s | %s | Wilaya: %s | Commune: %s | Lots: %d | Annonceur: %s",
+                 scope, ann_id, titre[:35], row["wilaya"], row["commune"], len(lots), row["annonceur"][:25])
+        return row
+
+    def scrape_notice_type(self, notice_type: str, run_id: str, since_date: str = "", verdicts: dict | None = None) -> list[dict]:
+        """Scrape either 'appels-doffres' or 'avis-attribution' with scan downloads and AI extraction."""
+        verdicts = verdicts if verdicts is not None else {}
+        label = "Appels d'Offres" if notice_type == "appels-doffres" else "Avis d'Attribution"
+        log.info("--- Scraping %s (since date: %s) ---", label, since_date or "any")
+
+        all_annonces = self.collect_listings(notice_type, since_date)
+        log.info("Total %s fetched (>= %s): %d", label, since_date or "all", len(all_annonces))
+
+        candidates = []
+        n_cached_rejects = 0
+        for a in all_annonces:
+            ann_id = str(a.get("id_annonce", "")).strip()
+            entry = cached_verdict(verdicts, ann_id) if ann_id else None
+            if entry and entry.get("verdict") == "reject":
+                n_cached_rejects += 1
+                continue
+            if entry and entry.get("verdict") == "match" and isinstance(entry.get("row"), dict):
+                candidates.append((a, "cached", entry["row"]))
                 continue
 
-            # If notice had generic terms ('stade', 'terrain') but neither explicit gazon in text nor AI positive evidence in scan, skip it!
-            if not has_explicit_gazon and not ai_has_explicit_evidence:
-                log.info("  -> [REJECTED NON-GAZON] %s (No explicit gazon/turf evidence in text or scan) -- Skipping.", titre[:65])
-                if ad_scan_dir.exists():
-                    shutil.rmtree(ad_scan_dir, ignore_errors=True)
+            t = str(a.get("titre") or "")
+            decision, info = prefilter_decision(f"{t} {a.get('description') or ''}")
+            if decision == "skip":
+                if info.startswith("excluded"):
+                    log.info("  -> Pre-filter excluded notice: %s [%s]", t[:70], info)
                 continue
+            candidates.append((a, decision, info))
 
-            # ── 3. Merge Web Data with AI Complementary Data ────────
-            wilaya_val = (
-                detail.get("wilaya")
-                or (a.get("wilaya") or {}).get("nom_fr", "")
-                or (ai_data.get("wilaya", "").strip().upper() if ai_data.get("wilaya") != "/" else "")
-            )
-            annonceur_val = (
-                detail.get("annonceur")
-                or (ai_data.get("annonceur", "").strip() if ai_data.get("annonceur") != "/" else "")
-            )
+        counts = {k: sum(1 for _, d, _ in candidates if d == k) for k in ("explicit", "ocr", "cached")}
+        log.info("After TAPIDOR scope filter: %d %s to process (%d explicit, %d to verify by OCR, "
+                 "%d cached matches; %d cached rejections skipped)",
+                 len(candidates), label, counts["explicit"], counts["ocr"], counts["cached"], n_cached_rejects)
 
-            commune_val = parse_commune(titre, annonceur_val)
-            if (not commune_val or commune_val == "/" or len(commune_val) <= 2) and ai_data.get("commune") and ai_data.get("commune") != "/":
-                commune_val = ai_data.get("commune").strip().upper()
-
-            entreprise_val = detail.get("entreprise_concernee", "")
-            if (not entreprise_val or entreprise_val == "/") and ai_data.get("entreprise_attributaire") and ai_data.get("entreprise_attributaire") != "/":
-                entreprise_val = ai_data.get("entreprise_attributaire").strip()
-
-            montant_val = detail.get("montant", "")
-            if (not montant_val or montant_val == "/") and ai_data.get("budget") and ai_data.get("budget") != "/":
-                montant_val = ai_data.get("budget").strip()
-
-            delai_val = parse_delai(detail.get("nbr_jours", 0), detail.get("description", ""))
-            if (not delai_val or delai_val == "/") and ai_data.get("delai") and ai_data.get("delai") != "/":
-                delai_val = ai_data.get("delai").strip()
-
-            action_val = classify_action(titre)
-            if action_val == "RÉALISATION" and ai_data.get("action") and ai_data.get("action") != "/":
-                ai_act = classify_action(ai_data.get("action"))
-                if ai_act != "RÉALISATION":
-                    action_val = ai_act
-
-            ptype_val = classify_type_projet(titre)
-            if ptype_val == "COMPLEXE SPORTIF" and ai_data.get("type_projet") and ai_data.get("type_projet") != "/":
-                ai_p = classify_type_projet(ai_data.get("type_projet"))
-                if ai_p != "COMPLEXE SPORTIF":
-                    ptype_val = ai_p
-
-            row = {
-                "run_id": run_id,
-                "id": ann_id,
-                "slug": slug,
-                "url": f"{BASE_URL}/annonces/{slug}",
-                "titre": titre,
-                "action": action_val,
-                "ptype": ptype_val,
-                "wilaya": wilaya_val,
-                "commune": commune_val,
-                "date_parution": detail.get("date_parution") or raw_date,
-                "date_parution_ao": ai_data.get("date_parution_ao", "/"),
-                "date_echeance": detail.get("date_echeance", ""),
-                "type_annonce": notice_type,
-                "annonceur": annonceur_val,
-                "code_annonce": detail.get("code_annonce", ""),
-                "entreprise_concernee": entreprise_val,
-                "montant": montant_val,
-                "delai": delai_val,
-                "description": detail.get("description", ""),
-                "nbr_jours": detail.get("nbr_jours", 0),
-                "scans": [str(p) for p in downloaded_scans],
-                "scraped_at": datetime.now().isoformat(),
-            }
-            results.append(row)
-            log.info("  [MATCH] %s | %s | Wilaya: %s | Commune: %s | Annonceur: %s",
-                     ann_id, titre[:35], row["wilaya"], row["commune"], row["annonceur"][:25])
+        results = []
+        for a, decision, info in candidates:
+            if decision == "cached":
+                log.info("  [CACHED MATCH] %s | %s", info.get("id"), str(info.get("titre", ""))[:50])
+                results.append(info)
+                continue
+            try:
+                row = self.process_ad(a, notice_type, run_id, decision,
+                                      info if decision == "explicit" else None, verdicts)
+            except Exception as e:
+                # One malformed notice must never stop the whole cycle
+                log.exception("  -> Error while processing notice %s (%s): %s",
+                              a.get("id_annonce"), str(a.get("titre", ""))[:50], e)
+                self.ad_errors += 1
+                continue
+            if row:
+                results.append(row)
             time.sleep(0.5)
 
         return results
 
     # ── Main Run ─────────────────────────────────────────────────────────────
 
-    def run(self, since_date: str | None = None):
+    def run(self, since_date: str | None = None, notice_types: list[str] | None = None) -> int:
+        """Run the daily cycles. Returns the process exit code (1 when something needs attention)."""
         run_id = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         if not since_date:
             since_date = os.getenv("AM_SINCE_DATE", "").strip()
@@ -1567,41 +2065,71 @@ class AlgerieMarchesScraper:
             # Default to last 7 days so weekend publications and downtime gaps are automatically recovered
             since_date = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
 
+        self.failures, self.unverified, self.ad_errors = [], [], 0
+        self._session_refreshed = False
+        _nvidia_state.update(failures=0, disabled=False)
+        verdicts = load_verdicts()
+
         log.info("=" * 60)
         log.info("AlgerieMarches Scraper Run %s started", run_id)
         log.info("Cutoff date (since): %s", since_date)
         log.info("Keyword filter: %s", ACTIVE_KEYWORDS)
 
-        self.ensure_session()
+        cycles = [
+            ("appels-doffres", "APPELS D'OFFRES", "AO"),    # -> APPEL D'OFFRE 2026
+            ("avis-attribution", "AVIS D'ATTRIBUTION", "AA"),  # -> AVIS D'ATTRIBUTIONS 2026
+        ]
+        all_matches = []
+        try:
+            self.ensure_session()
+            for n, (notice_type, title, short) in enumerate(cycles, start=1):
+                if notice_types and notice_type not in notice_types:
+                    continue
+                log.info("\n>>> CYCLE %d: %s <<<", n, title)
+                try:
+                    results = self.scrape_notice_type(notice_type, run_id, since_date=since_date, verdicts=verdicts)
+                except Exception as e:
+                    log.exception("%s cycle crashed: %s", title, e)
+                    self.failures.append(f"{title} cycle crashed: {e}")
+                    continue
+                all_matches.extend(results)
+                if results:
+                    added = append_to_gsheet(results, notice_type=notice_type)
+                    if added < 0:
+                        self.failures.append(f"{title}: Google Sheet sync failed")
+                    else:
+                        log.info("%s Sync summary: %d added to Google Sheet", short, added)
 
-        # 1. Scrape Appels d'Offres -> Target: APPEL D'OFFRE 2026
-        log.info("\n>>> CYCLE 1: APPELS D'OFFRES <<<")
-        ao_results = self.scrape_notice_type("appels-doffres", run_id, since_date=since_date)
-        if ao_results:
-            added_gsheet = append_to_gsheet(ao_results, notice_type="appels-doffres")
-            log.info("AO Sync summary: %d added to Google Sheet", added_gsheet)
+            # Generate daily scans gallery for GitHub
+            if all_matches:
+                generate_daily_scans_summary(all_matches)
+        finally:
+            save_verdicts(verdicts)
+            self._save_cookies()
 
-        # 2. Scrape Avis d'Attribution -> Target: AVIS D'ATTRIBUTIONS 2026
-        log.info("\n>>> CYCLE 2: AVIS D'ATTRIBUTION <<<")
-        aa_results = self.scrape_notice_type("avis-attribution", run_id, since_date=since_date)
-        if aa_results:
-            added_gsheet = append_to_gsheet(aa_results, notice_type="avis-attribution")
-            log.info("AA Sync summary: %d added to Google Sheet", added_gsheet)
-
-        # 3. Generate daily scans gallery for GitHub
-        all_matches = (ao_results or []) + (aa_results or [])
-        if all_matches:
-            generate_daily_scans_summary(all_matches)
-
-        self._save_cookies()
+        if self.unverified:
+            log.warning("%d notice(s) could not be verified because no OCR engine answered: %s",
+                        len(self.unverified), ", ".join(self.unverified))
+        if self.ad_errors:
+            self.failures.append(f"{self.ad_errors} notice(s) failed with an exception (see traceback above)")
+        if self.failures:
+            for problem in self.failures:
+                log.error("RUN PROBLEM: %s", problem)
+            log.error("Run %s finished with %d problem(s)", run_id, len(self.failures))
+            return 1
         log.info("\nRun %s successfully completed!", run_id)
+        return 0
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="AlgerieMarches Scraper & Google Sheets Sync")
     parser.add_argument("--since", dest="since_date", default=None,
-                        help="Cutoff publication date YYYY-MM-DD (defaults to yesterday)")
+                        help="Cutoff publication date YYYY-MM-DD (defaults to 7 days ago)")
+    parser.add_argument("--type", dest="notice_type", default=None,
+                        choices=["appels-doffres", "avis-attribution"],
+                        help="Only scrape this notice type (default: both)")
     args = parser.parse_args()
 
     scraper = AlgerieMarchesScraper()
-    scraper.run(since_date=args.since_date)
+    sys.exit(scraper.run(since_date=args.since_date,
+                         notice_types=[args.notice_type] if args.notice_type else None))
