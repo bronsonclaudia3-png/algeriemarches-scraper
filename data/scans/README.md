@@ -1,14 +1,14 @@
 # 🗂️ AlgerieMarches Daily Scans Archive
 
-> Central archive of newspaper scans downloaded and OCR-analyzed by Gemini 2.5 Flash for TAPIDOR.
+> Central archive of newspaper scans downloaded and OCR-analyzed (NVIDIA NIM / Gemini) for TAPIDOR.
 
 | Date | Matched Ads | Gallery Link |
 | :---: | :---: | :---: |
-| **2026-10-22** | 4 ads | [📂 Browse Scans](2026-10-22/) |
-| **2026-10-21** | 2 ads | [📂 Browse Scans](2026-10-21/) |
-| **2026-10-20** | 0 ads | [📂 Browse Scans](2026-10-20/) |
-| **2026-10-19** | 1 ad | [📂 Browse Scans](2026-10-19/) |
-| **2026-10-18** | 1 ad | [📂 Browse Scans](2026-10-18/) |
+| **2026-10-22** | 5 ads | [📂 Browse Scans](2026-10-22/) |
+| **2026-10-21** | 3 ads | [📂 Browse Scans](2026-10-21/) |
+| **2026-10-20** | 4 ads | [📂 Browse Scans](2026-10-20/) |
+| **2026-10-19** | 2 ads | [📂 Browse Scans](2026-10-19/) |
+| **2026-10-18** | 8 ads | [📂 Browse Scans](2026-10-18/) |
 | **2026-10-15** | 2 ads | [📂 Browse Scans](2026-10-15/) |
 | **2026-10-14** | 1 ad | [📂 Browse Scans](2026-10-14/) |
 | **2026-10-13** | 2 ads | [📂 Browse Scans](2026-10-13/) |

@@ -1,6 +1,6 @@
 # 📰 Newspaper Scans Gallery — 2026-10-19
 
-> Scans downloaded & OCR-analyzed with Gemini 2.5 Flash for TAPIDOR
+> Scans downloaded & OCR-analyzed (NVIDIA NIM / Gemini) for TAPIDOR
 
 | N° | Ad ID | Type | Action & Facility | Wilaya | Commune | Budget | Délai | Scans |
 | :---: | :---: | :---: | :--- | :---: | :---: | :---: | :---: | :---: |

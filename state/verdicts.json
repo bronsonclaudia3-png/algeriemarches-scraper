@@ -1,0 +1,466 @@
+{
+ "94634": {
+  "checked": "2026-10-24",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "95953": {
+  "checked": "2026-10-24",
+  "row": {
+   "action": "RÉALISATION",
+   "annonceur": "commune de frenda",
+   "code_annonce": "10/2026 ",
+   "commune": "FRENDA",
+   "date_echeance": "2026-11-02",
+   "date_parution": "2026-10-19",
+   "date_parution_ao": "/",
+   "delai": "/",
+   "entreprise_concernee": "",
+   "id": "95953",
+   "lots": [
+    {
+     "budget": "/",
+     "commune": "FRENDA",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "01",
+     "objet": "Étude Suivi Et Réalisation Des Vestiaires Et Gazon Synthétique Au Stade Communale Saidi Djillali"
+    }
+   ],
+   "montant": "",
+   "nbr_jours": 0,
+   "ptype": "STADE COMMUNAL",
+   "run_id": "2026-10-24_11-51-53",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-10-19/95953/AM_95953_20261019_11130_93131_ad.jpg",
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-10-19/95953/AM_95953_20261019_11130_52365_ad.jpg"
+   ],
+   "scope": "GAZON",
+   "scraped_at": "2026-10-24T11:57:07.517172",
+   "slug": "212818-etude-suivi-et-realisation-des-vestiaires-et-gazon-synthetique-au-stade-communale-saidi-djillali-realisation",
+   "titre": "Étude Suivi Et Réalisation Des Vestiaires Et Gazon Synthétique Au Stade Communale Saidi Djillali (REALISATION)",
+   "type_annonce": "appels-doffres",
+   "url": "https://algeriemarches.com/annonces/212818-etude-suivi-et-realisation-des-vestiaires-et-gazon-synthetique-au-stade-communale-saidi-djillali-realisation",
+   "wilaya": "Tiaret"
+  },
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "match"
+ },
+ "96310": {
+  "checked": "2026-10-24",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "96462": {
+  "checked": "2026-10-24",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "96911": {
+  "checked": "2026-10-24",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "97298": {
+  "checked": "2026-10-24",
+  "row": {
+   "action": "FOURNITURE ET POSE",
+   "annonceur": "COMMUNE D'EL BAYADH",
+   "code_annonce": "08/2026",
+   "commune": "EL BAYADH",
+   "date_echeance": "2026-12-31",
+   "date_parution": "2026-10-21",
+   "date_parution_ao": "/",
+   "delai": "/",
+   "entreprise_concernee": "sarl tapis karam",
+   "id": "97298",
+   "lots": [],
+   "montant": "",
+   "nbr_jours": 0,
+   "ptype": "TAPIS MOSQUÉE",
+   "run_id": "2026-10-24_11-51-53",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-10-21/97298/AM_97298_20261021_8308_91256_ad.jpg",
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-10-21/97298/AM_97298_20261021_8308_57295_ad.jpg"
+   ],
+   "scope": "TAPIS",
+   "scraped_at": "2026-10-24T12:24:13.082938",
+   "slug": "396720-fourniture-et-pose-de-tapis-pour-les-mosquees-lof-unique",
+   "titre": "Fourniture et pose de tapis pour les mosquées (lof unique)",
+   "type_annonce": "avis-attribution",
+   "url": "https://algeriemarches.com/annonces/396720-fourniture-et-pose-de-tapis-pour-les-mosquees-lof-unique",
+   "wilaya": "El Bayadh"
+  },
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "match"
+ },
+ "97497": {
+  "checked": "2026-10-24",
+  "row": {
+   "action": "RÉALISATION",
+   "annonceur": "commune de constantine",
+   "code_annonce": "22.09.2026",
+   "commune": "CONSTANTINE",
+   "date_echeance": "2026-12-31",
+   "date_parution": "2026-10-21",
+   "date_parution_ao": "21/09/2026",
+   "delai": "/",
+   "entreprise_concernee": "AOUACHERIA ALAA",
+   "id": "97497",
+   "lots": [
+    {
+     "budget": "6 959 358.00 DA",
+     "commune": "CONSTANTINE",
+     "delai": "45 Jours",
+     "entreprise_attributaire": "ETBH AQUACHERIA ALAA",
+     "in_scope": true,
+     "numero": "01",
+     "objet": "REALISATION AIRES DE JEUX EN GAZON SYNTHETIQUE A LA CITE EMIR ABDELKADER"
+    },
+    {
+     "budget": "5 663 686.00 DA",
+     "commune": "CONSTANTINE",
+     "delai": "45 Jours",
+     "entreprise_attributaire": "MEHRIS ABDELKRIM ETB-TCE",
+     "in_scope": true,
+     "numero": "02",
+     "objet": "REALISATION AIRES DE JEUX EN GAZON SYNTHETIQUE A LA CITE ELMOUNA"
+    },
+    {
+     "budget": "11 766 868.75 DA",
+     "commune": "CONSTANTINE",
+     "delai": "55 Jours",
+     "entreprise_attributaire": "EURL G BEL HOS",
+     "in_scope": true,
+     "numero": "03",
+     "objet": "REALISATION AIRES DE JEUX EN GAZON SYNTHETIQUE A LA CITE BOUDJENANA"
+    },
+    {
+     "budget": "/",
+     "commune": "CONSTANTINE",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "04",
+     "objet": "REALISATION AIRES DE JEUX EN GAZON SYNTHETIQUE A LA CITE SERKINA"
+    }
+   ],
+   "montant": "",
+   "nbr_jours": 0,
+   "ptype": "AIRE DE JEUX",
+   "run_id": "2026-10-24_11-51-53",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-10-21/97497/AM_97497_20261021_10834_41518_ad.jpg",
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-10-21/97497/AM_97497_20261021_10834_66076_ad.jpg"
+   ],
+   "scope": "GAZON",
+   "scraped_at": "2026-10-24T12:16:26.835489",
+   "slug": "213298-realisation-aires-de-jeux-en-gazon-synthetique",
+   "titre": "Réalisation aires de jeux en gazon synthétique",
+   "type_annonce": "avis-attribution",
+   "url": "https://algeriemarches.com/annonces/213298-realisation-aires-de-jeux-en-gazon-synthetique",
+   "wilaya": "Constantine"
+  },
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "match"
+ },
+ "97701": {
+  "checked": "2026-10-24",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "97743": {
+  "checked": "2026-10-24",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "97781": {
+  "checked": "2026-10-24",
+  "row": {
+   "action": "RÉALISATION",
+   "annonceur": "djs de la wilaya de sétif",
+   "code_annonce": "21.10.2026",
+   "commune": "/",
+   "date_echeance": "2026-11-04",
+   "date_parution": "2026-10-21",
+   "date_parution_ao": "/",
+   "delai": "/",
+   "entreprise_concernee": "",
+   "id": "97781",
+   "lots": [
+    {
+     "budget": "/",
+     "commune": "BOUTALEB",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "01",
+     "objet": "Réalisation d'un terrains sportifs de proximités en gazon synthétique à la commune de boutaleb"
+    },
+    {
+     "budget": "/",
+     "commune": "BABOUR",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "02",
+     "objet": "Réalisation d'un terrains sportifs de proximités en gazon synthétique à la commune de babour"
+    },
+    {
+     "budget": "/",
+     "commune": "BELAA",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "03",
+     "objet": "Réalisation d'un terrains sportifs de proximités en gazon synthétique à la commune de belaa"
+    },
+    {
+     "budget": "/",
+     "commune": "TAMMAMI SOKHNA",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "04",
+     "objet": "Réalisation d'un terrains sportifs de proximités en gazon synthétique à la commune de tammami sokhna"
+    },
+    {
+     "budget": "/",
+     "commune": "BENI AZIZ",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "05",
+     "objet": "Réalisation d'un terrains sportifs de proximités en gazon synthétique à la commune de beni aziz"
+    },
+    {
+     "budget": "/",
+     "commune": "OULED TEBBANE",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "06",
+     "objet": "Réalisation d'un terrains sportifs de proximités en gazon synthétique à la commune de ouled tebbane"
+    }
+   ],
+   "montant": "",
+   "nbr_jours": 0,
+   "ptype": "TERRAIN DE SPORT",
+   "run_id": "2026-10-24_11-51-53",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-10-21/97781/AM_97781_20261021_13319_84350_ad.jpg"
+   ],
+   "scope": "GAZON",
+   "scraped_at": "2026-10-24T11:54:21.539390",
+   "slug": "788945-realisation-de-06-terrains-sportifs-de-proximites-en-gazon-synthetique-a-travers-les-communes",
+   "titre": "Réalisation de 06 terrains sportifs de proximités en gazon synthétique a travers les communes ",
+   "type_annonce": "appels-doffres",
+   "url": "https://algeriemarches.com/annonces/788945-realisation-de-06-terrains-sportifs-de-proximites-en-gazon-synthetique-a-travers-les-communes",
+   "wilaya": "Sétif"
+  },
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "match"
+ },
+ "98713": {
+  "checked": "2026-10-24",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "98766": {
+  "checked": "2026-10-24",
+  "row": {
+   "action": "RÉALISATION",
+   "annonceur": "dep de la wilaya de chlef",
+   "code_annonce": "18/2026",
+   "commune": "/",
+   "date_echeance": "2026-12-31",
+   "date_parution": "2026-10-22",
+   "date_parution_ao": "/",
+   "delai": "/",
+   "entreprise_concernee": "ETB BEKOUASSA AHMED",
+   "id": "98766",
+   "lots": [],
+   "montant": "",
+   "nbr_jours": 0,
+   "ptype": "COUR ECOLE PRIMAIRE",
+   "run_id": "2026-10-24_11-51-53",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-10-22/98766/AM_98766_20261022_123322_94037_ad.jpg"
+   ],
+   "scope": "GAZON",
+   "scraped_at": "2026-10-24T12:11:29.475794",
+   "slug": "115234-realisation-dune-ecole-primaire-type-04",
+   "titre": "Réalisation d'une école primaire type 04",
+   "type_annonce": "avis-attribution",
+   "url": "https://algeriemarches.com/annonces/115234-realisation-dune-ecole-primaire-type-04",
+   "wilaya": "Chlef"
+  },
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "match"
+ },
+ "98807": {
+  "checked": "2026-10-24",
+  "row": {
+   "action": "AMÉNAGEMENT ET RÉHABILITATION",
+   "annonceur": "Commune de Mila",
+   "code_annonce": "",
+   "commune": "MILA",
+   "date_echeance": "2026-12-31",
+   "date_parution": "2026-10-22",
+   "date_parution_ao": "09/09/2026",
+   "delai": "02 MOIS",
+   "entreprise_concernee": "chakir rachid",
+   "id": "98807",
+   "lots": [
+    {
+     "budget": "15 482 376,00 DA",
+     "commune": "MILA",
+     "delai": "02 MOIS",
+     "entreprise_attributaire": "CHEKIR RACHID",
+     "in_scope": true,
+     "numero": "01",
+     "objet": "RECOUVRIR LE SOL DU STADE AVEC DU GAZON SYNTHÉTIQUE"
+    }
+   ],
+   "montant": "15 482 376,00 DA",
+   "nbr_jours": 0,
+   "ptype": "STADE COMMUNAL",
+   "run_id": "2026-10-24_11-51-53",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-10-22/98807/AM_98807_20261022_124528_66864_ad.jpg"
+   ],
+   "scope": "GAZON",
+   "scraped_at": "2026-10-24T12:12:40.263898",
+   "slug": "137489-amenagement-et-rehabilitation-du-stade-communal-cite-sannaoia-lot-01-recouvrir-le-sol-du-stade-avec-du-gazon-synthetique",
+   "titre": "aménagement et réhabilitation du stade communal cite sannaoia lot 01, recouvrir le sol du stade avec du gazon synthetique",
+   "type_annonce": "avis-attribution",
+   "url": "https://algeriemarches.com/annonces/137489-amenagement-et-rehabilitation-du-stade-communal-cite-sannaoia-lot-01-recouvrir-le-sol-du-stade-avec-du-gazon-synthetique",
+   "wilaya": "Mila"
+  },
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "match"
+ },
+ "98883": {
+  "checked": "2026-10-24",
+  "row": {
+   "action": "RÉHABILITATION",
+   "annonceur": "Office du complexe olympique Mohamed Boudiaf",
+   "code_annonce": "05/OCO/2026",
+   "commune": "/",
+   "date_echeance": "2026-12-31",
+   "date_parution": "2026-10-22",
+   "date_parution_ao": "26/07/2026",
+   "delai": "/",
+   "entreprise_concernee": "EURL EN.CO.RE",
+   "id": "98883",
+   "lots": [
+    {
+     "budget": "83 427 190,18 DA",
+     "commune": "/",
+     "delai": "07 MOIS",
+     "entreprise_attributaire": "EURL EN.CO.RE",
+     "in_scope": true,
+     "numero": "01",
+     "objet": "Réhabilitation de deux terrains annexes de football en gazon synthétique au niveau du stade du 5 Juillet"
+    },
+    {
+     "budget": "/",
+     "commune": "/",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "02",
+     "objet": "Réhabilitation d'un terrain annexe de football en gazon naturel au niveau du stade du 5 Juillet"
+    }
+   ],
+   "montant": "",
+   "nbr_jours": 0,
+   "ptype": "STADE",
+   "run_id": "2026-10-24_11-51-53",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-10-22/98883/AM_98883_20261022_1363_11157_ad.jpg"
+   ],
+   "scope": "GAZON",
+   "scraped_at": "2026-10-24T12:16:14.435961",
+   "slug": "281344-rehabilitation-des-trois-03-terrains-annexes-de-football-au-niveau-du-stade-du-05-juillet",
+   "titre": "Réhabilitation des trois (03) terrains annexes de Football au niveau du stade du 05 juillet, ",
+   "type_annonce": "avis-attribution",
+   "url": "https://algeriemarches.com/annonces/281344-rehabilitation-des-trois-03-terrains-annexes-de-football-au-niveau-du-stade-du-05-juillet",
+   "wilaya": "Alger"
+  },
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "match"
+ },
+ "99157": {
+  "checked": "2026-10-24",
+  "row": {
+   "action": "AMÉNAGEMENT",
+   "annonceur": "Commune de Mazouna",
+   "code_annonce": "32/2026",
+   "commune": "MAZOUNA",
+   "date_echeance": "2026-12-31",
+   "date_parution": "2026-10-22",
+   "date_parution_ao": "/",
+   "delai": "15 JOURS",
+   "entreprise_concernee": "EURL IMAD CONSTRUCTION ",
+   "id": "99157",
+   "lots": [
+    {
+     "budget": "1.274.371,00 DA",
+     "commune": "MAZOUNA",
+     "delai": "15 JOURS",
+     "entreprise_attributaire": "EURL IMAD LIL BINA",
+     "in_scope": true,
+     "numero": "01",
+     "objet": "تهيئة ساحة مدرسة نياطي بن يحي الخنانسة (تغطية بالعشب الإصطناعي)"
+    }
+   ],
+   "montant": "1.274.371,00 DA",
+   "nbr_jours": 0,
+   "ptype": "COUR",
+   "run_id": "2026-10-24_11-51-53",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-10-22/99157/AM_99157_20261022_152550_36492_ad.jpg"
+   ],
+   "scope": "GAZON",
+   "scraped_at": "2026-10-24T12:01:57.774708",
+   "slug": "626653-amenagement-de-la-cour-de-lecole-niyati-ben-yahia",
+   "titre": "Aménagement de la cour de l'école Niyati Ben Yahia ",
+   "type_annonce": "avis-attribution",
+   "url": "https://algeriemarches.com/annonces/626653-amenagement-de-la-cour-de-lecole-niyati-ben-yahia",
+   "wilaya": "Relizane"
+  },
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "match"
+ },
+ "99186": {
+  "checked": "2026-10-24",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "reject"
+ }
+}
