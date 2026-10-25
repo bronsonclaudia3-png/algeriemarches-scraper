@@ -6,6 +6,41 @@
   "v": 2,
   "verdict": "reject"
  },
+ "94749": {
+  "checked": "2026-10-25",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "94812": {
+  "checked": "2026-10-25",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "95263": {
+  "checked": "2026-10-25",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "95290": {
+  "checked": "2026-10-25",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "95388": {
+  "checked": "2026-10-25",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
  "95953": {
   "checked": "2026-10-24",
   "row": {
@@ -49,6 +84,13 @@
   "type": "appels-doffres",
   "v": 2,
   "verdict": "match"
+ },
+ "96104": {
+  "checked": "2026-10-25",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
  },
  "96310": {
   "checked": "2026-10-24",
@@ -104,6 +146,13 @@
   "type": "avis-attribution",
   "v": 2,
   "verdict": "match"
+ },
+ "97332": {
+  "checked": "2026-10-25",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
  },
  "97497": {
   "checked": "2026-10-24",
@@ -277,6 +326,41 @@
   "type": "appels-doffres",
   "v": 2,
   "verdict": "match"
+ },
+ "98174": {
+  "checked": "2026-10-25",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "98182": {
+  "checked": "2026-10-25",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "98183": {
+  "checked": "2026-10-25",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "98184": {
+  "checked": "2026-10-25",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "98284": {
+  "checked": "2026-10-25",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
  },
  "98713": {
   "checked": "2026-10-24",
@@ -462,5 +546,71 @@
   "type": "appels-doffres",
   "v": 2,
   "verdict": "reject"
+ },
+ "99255": {
+  "checked": "2026-10-25",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "99534": {
+  "checked": "2026-10-25",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "99769": {
+  "checked": "2026-10-25",
+  "row": {
+   "action": "RÉHABILITATION",
+   "annonceur": "djs de la wilaya de sétif",
+   "code_annonce": "01/06/2026 ",
+   "commune": "/",
+   "date_echeance": "2026-12-31",
+   "date_parution": "2026-10-25",
+   "date_parution_ao": "01/06/2026",
+   "delai": "/",
+   "entreprise_concernee": "SARL I R S DERICHE+BADJOU ELHADI",
+   "id": "99769",
+   "lots": [
+    {
+     "budget": "19.450.550.00 DA",
+     "commune": "LOURICIA",
+     "delai": "45 JOURS",
+     "entreprise_attributaire": "SARL I R S DERICHE",
+     "in_scope": true,
+     "numero": "01",
+     "objet": "Réhabilitation du stade communal de football a louricia et son revetment en gazon Synthétique"
+    },
+    {
+     "budget": "25.611.727.40 DA",
+     "commune": "BENI OUECINE",
+     "delai": "05 MOIS",
+     "entreprise_attributaire": "BADJOU ELHADI",
+     "in_scope": true,
+     "numero": "02",
+     "objet": "Réhabilitation du stade communal de football a beni ouecine et son revetment en gazon Synthétique"
+    }
+   ],
+   "montant": "",
+   "nbr_jours": 0,
+   "ptype": "STADE COMMUNAL",
+   "run_id": "2026-10-25_12-22-13",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-10-25/99769/AM_99769_20261025_91656_17699_ad.jpg"
+   ],
+   "scope": "GAZON",
+   "scraped_at": "2026-10-25T12:27:21.247382",
+   "slug": "748089-rehabilitation-de-deux-stades-communaux-de-football",
+   "titre": "Réhabilitation de deux stades communaux de football ",
+   "type_annonce": "avis-attribution",
+   "url": "https://algeriemarches.com/annonces/748089-rehabilitation-de-deux-stades-communaux-de-football",
+   "wilaya": "Sétif"
+  },
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "match"
  }
 }
