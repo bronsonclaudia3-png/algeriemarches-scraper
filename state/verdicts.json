@@ -20,12 +20,221 @@
   "v": 2,
   "verdict": "reject"
  },
+ "100426": {
+  "checked": "2026-10-27",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
  "100515": {
   "checked": "2026-10-26",
   "reason": "no explicit gazon/tapis in text or scan",
   "type": "appels-doffres",
   "v": 2,
   "verdict": "reject"
+ },
+ "100648": {
+  "checked": "2026-10-27",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "101085": {
+  "checked": "2026-10-27",
+  "row": {
+   "action": "RÉALISATION",
+   "annonceur": "Commune d'El Guettar",
+   "code_annonce": "36/2026",
+   "commune": "EL GUETTAR",
+   "date_echeance": "2026-12-31",
+   "date_parution": "2026-10-25",
+   "date_parution_ao": "/",
+   "delai": "30 JOURS",
+   "entreprise_concernee": "EURL IMED CONSTRUCTION ",
+   "id": "101085",
+   "lots": [
+    {
+     "budget": "1 963 417,89 DA",
+     "commune": "EL KETTAR",
+     "delai": "30 JOURS",
+     "entreprise_attributaire": "EURL IMAD POUR LA CONSTRUCTION",
+     "in_scope": true,
+     "numero": "01",
+     "objet": "إنجاز ساحة لعب بالعشب الاصطناعي بمدرسة أول نوفمبر"
+    }
+   ],
+   "montant": "1 963 417,89 DA",
+   "nbr_jours": 0,
+   "ptype": "AIRE DE JEUX",
+   "run_id": "2026-10-27_13-00-16",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-10-25/101085/AM_101085_20261026_142740_10667_ad.jpg"
+   ],
+   "scope": "GAZON",
+   "scraped_at": "2026-10-27T13:09:05.735486",
+   "slug": "100674-realisation-aire-de-jeux-en-gazon-synthetique",
+   "titre": "Réalisation aire de jeux en gazon synthétique ",
+   "type_annonce": "avis-attribution",
+   "url": "https://algeriemarches.com/annonces/100674-realisation-aire-de-jeux-en-gazon-synthetique",
+   "wilaya": "Relizane"
+  },
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "match"
+ },
+ "101354": {
+  "checked": "2026-10-27",
+  "row": {
+   "action": "RÉALISATION",
+   "annonceur": "Commune de Dechmia",
+   "code_annonce": "37/2026",
+   "commune": "DECHMIA",
+   "date_echeance": "2026-12-31",
+   "date_parution": "2026-10-26",
+   "date_parution_ao": "/",
+   "delai": "60 JOURS",
+   "entreprise_concernee": "ETB ABID OMAR ",
+   "id": "101354",
+   "lots": [
+    {
+     "budget": "6.923.122,50 دج",
+     "commune": "THENIA BEN YOUCEF",
+     "delai": "60 يوم",
+     "entreprise_attributaire": "مؤسسة اشغال البناء في مختلف مراحله عبيد عمر",
+     "in_scope": true,
+     "numero": "01",
+     "objet": "انجاز ملعب جواري بالعشب الاصطناعي بمنطقة ثنية بن يوسف"
+    }
+   ],
+   "montant": "6.923.122,50 دج",
+   "nbr_jours": 0,
+   "ptype": "STADE DE PROXIMITÉ",
+   "run_id": "2026-10-27_13-00-16",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-10-26/101354/AM_101354_20261027_83743_25732_ad.jpg"
+   ],
+   "scope": "GAZON",
+   "scraped_at": "2026-10-27T13:07:31.676226",
+   "slug": "276674-realisation-dun-stade-de-proximite-en-gazon-synthetique",
+   "titre": "Réalisation d'un stade de proximité en gazon synthétique ",
+   "type_annonce": "avis-attribution",
+   "url": "https://algeriemarches.com/annonces/276674-realisation-dun-stade-de-proximite-en-gazon-synthetique",
+   "wilaya": "Bouira"
+  },
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "match"
+ },
+ "101413": {
+  "checked": "2026-10-27",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "101433": {
+  "checked": "2026-10-27",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "101501": {
+  "checked": "2026-10-27",
+  "row": {
+   "action": "RÉALISATION ET REVÊTEMENT",
+   "annonceur": "commune d'ait khelili",
+   "code_annonce": "02/2026",
+   "commune": "AIT KHELILI",
+   "date_echeance": "2026-11-05",
+   "date_parution": "2026-10-27",
+   "date_parution_ao": "/",
+   "delai": "/",
+   "entreprise_concernee": "",
+   "id": "101501",
+   "lots": [
+    {
+     "budget": "/",
+     "commune": "AIT KHELLILI",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "01",
+     "objet": "Réalisation et revêtement en gazon synthétique d'une aire de jeux au village Agoulmim sur une superficie de 1 800 m²"
+    },
+    {
+     "budget": "/",
+     "commune": "AIT KHELLILI",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "02",
+     "objet": "Réalisation et revêtement en gazon synthétique d'une aire de jeux au village El klaa sur une superficie de 800 m²"
+    }
+   ],
+   "montant": 1800,
+   "nbr_jours": 0,
+   "ptype": "GAZON SYNTHÉTIQUE",
+   "run_id": "2026-10-27_13-00-16",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-10-27/101501/AM_101501_20261027_92714_97240_ad.jpg"
+   ],
+   "scope": "GAZON",
+   "scraped_at": "2026-10-27T13:03:00.122564",
+   "slug": "581655-realisation-et-le-revetement-en-gazon-synthetique-de-deux-02-sires-de-jeus-au-village-agoulmim-sur-une-superficie-de-1-800-m2-et-au-village-elklaa-sur-une-superficie-de-800-m2",
+   "titre": "Réalisation et le revêtement en gazon synthétique de deux (02) sires de jeus : au village Agoulmim sur une superficie de 1 800 m2 et au village ELklaa sur une superficie de 800 m2:",
+   "type_annonce": "appels-doffres",
+   "url": "https://algeriemarches.com/annonces/581655-realisation-et-le-revetement-en-gazon-synthetique-de-deux-02-sires-de-jeus-au-village-agoulmim-sur-une-superficie-de-1-800-m2-et-au-village-elklaa-sur-une-superficie-de-800-m2",
+   "wilaya": "Tizi Ouzou"
+  },
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "match"
+ },
+ "101580": {
+  "checked": "2026-10-27",
+  "row": {
+   "action": "TRAVAUX",
+   "annonceur": "Commune de Hammadi Krouma",
+   "code_annonce": "29/2026",
+   "commune": "HAMMADI KROUMA",
+   "date_echeance": "2026-12-31",
+   "date_parution": "2026-10-27",
+   "date_parution_ao": "13/09/2026",
+   "delai": "04 MOIS",
+   "entreprise_concernee": "E.T.B-T.C.E  01 RACHRACHE RACHID",
+   "id": "101580",
+   "lots": [
+    {
+     "budget": "39 904 045.09 DA",
+     "commune": "HAMADI KROUMA",
+     "delai": "04 MOIS",
+     "entreprise_attributaire": "E.T.B-T.C.E RACHRACHE RACHID",
+     "in_scope": true,
+     "numero": "01",
+     "objet": "R.A.R POSE DU GAZON SYNTHETIQUE AU NIVEAU DE STADE COMMUNAL HAMROUCHE HAMOUDI"
+    }
+   ],
+   "montant": "39 904 045.09 DA",
+   "nbr_jours": 0,
+   "ptype": "STADE COMMUNAL",
+   "run_id": "2026-10-27_13-00-16",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-10-27/101580/AM_101580_20261027_95543_79682_ad.jpg"
+   ],
+   "scope": "GAZON",
+   "scraped_at": "2026-10-27T13:06:18.301140",
+   "slug": "209465-rar-pose-du-gazon-synthetique-au-niveau-de-stade-communal-hamrouche-hamoudi",
+   "titre": "r.a.r pose du gazon synthétique au niveau de stade communal hamrouche hamoudi",
+   "type_annonce": "avis-attribution",
+   "url": "https://algeriemarches.com/annonces/209465-rar-pose-du-gazon-synthetique-au-niveau-de-stade-communal-hamrouche-hamoudi",
+   "wilaya": "Skikda"
+  },
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "match"
  },
  "94634": {
   "checked": "2026-10-24",
