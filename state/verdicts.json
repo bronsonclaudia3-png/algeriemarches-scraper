@@ -236,6 +236,63 @@
   "v": 2,
   "verdict": "match"
  },
+ "102035": {
+  "checked": "2026-10-28",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "102437": {
+  "checked": "2026-10-28",
+  "row": {
+   "action": "RÉALISATION",
+   "annonceur": "Commune de Yellel",
+   "code_annonce": "47/2026",
+   "commune": "YELLEL",
+   "date_echeance": "2026-12-31",
+   "date_parution": "2026-10-27",
+   "date_parution_ao": "/",
+   "delai": "90 JOURS",
+   "entreprise_concernee": "EURL MASYMAS TRAVAUX ",
+   "id": "102437",
+   "lots": [
+    {
+     "budget": "10 825 215,80 DA",
+     "commune": "BENI KTHIR",
+     "delai": "90 JOURS",
+     "entreprise_attributaire": "EURL MASYMAS TRAVAUX",
+     "in_scope": true,
+     "numero": "01",
+     "objet": "انجاز ملعب جواري بالعشب الاصطناعي بني كثير"
+    }
+   ],
+   "montant": "10 825 215,80 DA",
+   "nbr_jours": 0,
+   "ptype": "STADE DE PROXIMITÉ",
+   "run_id": "2026-10-28_13-50-58",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-10-27/102437/AM_102437_20261028_1007_62458_ad.jpg"
+   ],
+   "scope": "GAZON",
+   "scraped_at": "2026-10-28T13:56:44.141885",
+   "slug": "578403-realisation-dun-stade-de-proximite-en-gazon-synthetique",
+   "titre": "Réalisation d'un stade de proximité en gazon synthétique ",
+   "type_annonce": "avis-attribution",
+   "url": "https://algeriemarches.com/annonces/578403-realisation-dun-stade-de-proximite-en-gazon-synthetique",
+   "wilaya": "Relizane"
+  },
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "match"
+ },
+ "102784": {
+  "checked": "2026-10-28",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "reject"
+ },
  "94634": {
   "checked": "2026-10-24",
   "reason": "no explicit gazon/tapis in text or scan",
