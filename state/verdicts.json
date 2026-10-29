@@ -293,6 +293,63 @@
   "v": 2,
   "verdict": "reject"
  },
+ "103113": {
+  "checked": "2026-10-29",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "103291": {
+  "checked": "2026-10-29",
+  "row": {
+   "action": "RÉALISATION",
+   "annonceur": "Commune de M'Sila",
+   "code_annonce": "36/2026",
+   "commune": "M'SILA",
+   "date_echeance": "2026-12-31",
+   "date_parution": "2026-10-27",
+   "date_parution_ao": "/",
+   "delai": "45 JOURS",
+   "entreprise_concernee": "حجاب عامر",
+   "id": "103291",
+   "lots": [
+    {
+     "budget": "9 429 203,00 DA",
+     "commune": "M'SILA",
+     "delai": "45 JOURS",
+     "entreprise_attributaire": "HADJAB AMER",
+     "in_scope": true,
+     "numero": "01",
+     "objet": "إنجاز ساحة لعب بالعشب الاصطناعي بحي غالية العيد"
+    }
+   ],
+   "montant": "9 429 203,00 DA",
+   "nbr_jours": 0,
+   "ptype": "AIRE DE JEUX",
+   "run_id": "2026-10-29_13-57-19",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-10-27/103291/AM_103291_20261029_92640_83537_ad.jpg"
+   ],
+   "scope": "GAZON",
+   "scraped_at": "2026-10-29T14:07:24.159806",
+   "slug": "197992-realisation-dune-aire-de-jeux-en-gazon-synthetique",
+   "titre": "Réalisation d'une aire de jeux en gazon synthétique ",
+   "type_annonce": "avis-attribution",
+   "url": "https://algeriemarches.com/annonces/197992-realisation-dune-aire-de-jeux-en-gazon-synthetique",
+   "wilaya": "M'Sila"
+  },
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "match"
+ },
+ "103686": {
+  "checked": "2026-10-29",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
  "94634": {
   "checked": "2026-10-24",
   "reason": "no explicit gazon/tapis in text or scan",
