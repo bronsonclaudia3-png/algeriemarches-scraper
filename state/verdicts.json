@@ -350,6 +350,20 @@
   "v": 2,
   "verdict": "reject"
  },
+ "103897": {
+  "checked": "2026-10-30",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "104147": {
+  "checked": "2026-10-30",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
  "94634": {
   "checked": "2026-10-24",
   "reason": "no explicit gazon/tapis in text or scan",
