@@ -364,6 +364,94 @@
   "v": 2,
   "verdict": "reject"
  },
+ "104191": {
+  "checked": "2026-10-31",
+  "row": {
+   "action": "RÉALISATION",
+   "annonceur": "Direction de l’administration locale de la wilaya de Chlef",
+   "code_annonce": "06/10/2026",
+   "commune": "CHETTIA",
+   "date_echeance": "2026-12-31",
+   "date_parution": "2026-10-29",
+   "date_parution_ao": "/",
+   "delai": "45 JOURS",
+   "entreprise_concernee": "BENBECHI ABDELHAMID",
+   "id": "104191",
+   "lots": [
+    {
+     "budget": "11.933.439,00 DA",
+     "commune": "CHETTIA",
+     "delai": "45 JOURS",
+     "entreprise_attributaire": "BENBECHI ABDELHAMID",
+     "in_scope": true,
+     "numero": "01",
+     "objet": "réalisation d'un stade de proximité en gazon synthétique à la nouvelle ville commune de chettia"
+    }
+   ],
+   "montant": "11.933.439,00 DA",
+   "nbr_jours": 0,
+   "ptype": "STADE DE PROXIMITÉ",
+   "run_id": "2026-10-31_13-21-55",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-10-29/104191/AM_104191_20261030_175516_35281_ad.jpg",
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-10-29/104191/AM_104191_20261030_175516_69753_ad.jpg"
+   ],
+   "scope": "GAZON",
+   "scraped_at": "2026-10-31T13:25:54.430972",
+   "slug": "341939-realisation-dun-stade-de-proximite-en-gazon-synthetique",
+   "titre": "Réalisation d'un stade de proximité en gazon synthétique ",
+   "type_annonce": "avis-attribution",
+   "url": "https://algeriemarches.com/annonces/341939-realisation-dun-stade-de-proximite-en-gazon-synthetique",
+   "wilaya": "Chlef"
+  },
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "match"
+ },
+ "104192": {
+  "checked": "2026-10-31",
+  "row": {
+   "action": "RÉALISATION",
+   "annonceur": "Direction de l’administration locale de la wilaya de Chlef",
+   "code_annonce": "06/10/2026",
+   "commune": "CHLEF",
+   "date_echeance": "2026-12-31",
+   "date_parution": "2026-10-29",
+   "date_parution_ao": "/",
+   "delai": "45 JOURS",
+   "entreprise_concernee": "BENBECHI ABDELHAMID",
+   "id": "104192",
+   "lots": [
+    {
+     "budget": "8 174 705,00 DA",
+     "commune": "CHLEF",
+     "delai": "45 JOURS",
+     "entreprise_attributaire": "BENBECHI ABDELHAMID",
+     "in_scope": true,
+     "numero": "01",
+     "objet": "réalisation d'un stade de proximité en gazon synthétique a hay cherait commune de chlef"
+    }
+   ],
+   "montant": "8 174 705,00 DA",
+   "nbr_jours": 0,
+   "ptype": "STADE DE PROXIMITÉ",
+   "run_id": "2026-10-31_13-21-55",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-10-29/104192/AM_104192_20261030_175613_99170_ad.jpg",
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-10-29/104192/AM_104192_20261030_175613_74449_ad.jpg"
+   ],
+   "scope": "GAZON",
+   "scraped_at": "2026-10-31T13:27:06.343100",
+   "slug": "776373-realisation-dun-stade-de-proximite-en-gazon-synthetique",
+   "titre": "Réalisation d'un stade de proximité en gazon synthétique ",
+   "type_annonce": "avis-attribution",
+   "url": "https://algeriemarches.com/annonces/776373-realisation-dun-stade-de-proximite-en-gazon-synthetique",
+   "wilaya": "Chlef"
+  },
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "match"
+ },
  "94634": {
   "checked": "2026-10-24",
   "reason": "no explicit gazon/tapis in text or scan",
