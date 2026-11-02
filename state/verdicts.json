@@ -459,6 +459,113 @@
   "v": 2,
   "verdict": "reject"
  },
+ "104578": {
+  "checked": "2026-11-02",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "104588": {
+  "checked": "2026-11-02",
+  "row": {
+   "action": "TRAVAUX",
+   "annonceur": "université de blida 2",
+   "code_annonce": "04/UB2/2026",
+   "commune": "EL-AFFROUN",
+   "date_echeance": "2026-11-11",
+   "date_parution": "2026-11-02",
+   "date_parution_ao": "/",
+   "delai": "/",
+   "entreprise_concernee": "",
+   "id": "104588",
+   "lots": [
+    {
+     "budget": "/",
+     "commune": "EL-AFFROUN",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "07",
+     "objet": "Fourniture et pose des rideaux et moquette."
+    }
+   ],
+   "montant": 1000,
+   "nbr_jours": 0,
+   "ptype": "MOQUETTE",
+   "run_id": "2026-11-02_16-51-17",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-02/104588/AM_104588_2026112_9012_74537_ad.jpg"
+   ],
+   "scope": "TAPIS",
+   "scraped_at": "2026-11-02T16:56:17.241733",
+   "slug": "697004-acquisition-dequipements-pour-1000-places-pedagogiques-au-profit-de-luniversite-de-blida-2",
+   "titre": "Acquisition d'équipements pour 1000 places pédagogiques au profit de l'universite de blida 2",
+   "type_annonce": "appels-doffres",
+   "url": "https://algeriemarches.com/annonces/697004-acquisition-dequipements-pour-1000-places-pedagogiques-au-profit-de-luniversite-de-blida-2",
+   "wilaya": "Blida"
+  },
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "match"
+ },
+ "104852": {
+  "checked": "2026-11-02",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "104862": {
+  "checked": "2026-11-02",
+  "row": {
+   "action": "AMÉNAGEMENT",
+   "annonceur": "Commune d'ain ferrah",
+   "code_annonce": "03/2026",
+   "commune": "AIN FERRAH",
+   "date_echeance": "2026-11-11",
+   "date_parution": "2026-11-02",
+   "date_parution_ao": "/",
+   "delai": "/",
+   "entreprise_concernee": "",
+   "id": "104862",
+   "lots": [
+    {
+     "budget": "/",
+     "commune": "AIN FERRAH",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "01",
+     "objet": "Aménagement d'un stade communal à Ain Ferrah centre"
+    }
+   ],
+   "montant": "",
+   "nbr_jours": 0,
+   "ptype": "STADE COMMUNAL",
+   "run_id": "2026-11-02_16-51-17",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-02/104862/AM_104862_2026112_13139_63986_ad.jpg"
+   ],
+   "scope": "GAZON",
+   "scraped_at": "2026-11-02T16:54:58.911612",
+   "slug": "992841-amenagement-dun-stade-communal-a-ain-ferrah-centre",
+   "titre": "Aménagement d'un stade communal à Ain Ferrah centre",
+   "type_annonce": "appels-doffres",
+   "url": "https://algeriemarches.com/annonces/992841-amenagement-dun-stade-communal-a-ain-ferrah-centre",
+   "wilaya": "Mascara"
+  },
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "match"
+ },
+ "104917": {
+  "checked": "2026-11-02",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
  "94634": {
   "checked": "2026-10-24",
   "reason": "no explicit gazon/tapis in text or scan",
