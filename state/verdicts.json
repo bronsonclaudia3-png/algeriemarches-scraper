@@ -566,6 +566,64 @@
   "v": 2,
   "verdict": "reject"
  },
+ "105203": {
+  "checked": "2026-11-03",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "105820": {
+  "checked": "2026-11-03",
+  "row": {
+   "action": "RÉHABILITATION",
+   "annonceur": "Duac de la wilaya d'Oran",
+   "code_annonce": "19/2026",
+   "commune": "ORAN",
+   "date_echeance": "2026-11-17",
+   "date_parution": "2026-11-03",
+   "date_parution_ao": "/",
+   "delai": "/",
+   "entreprise_concernee": "",
+   "id": "105820",
+   "lots": [
+    {
+     "budget": "/",
+     "commune": "ORAN",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "02",
+     "objet": "Fourniture et Pose Moquette"
+    }
+   ],
+   "montant": "",
+   "nbr_jours": 0,
+   "ptype": "MOQUETTE",
+   "run_id": "2026-11-03_14-52-13",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-03/105820/AM_105820_2026113_132011_96975_ad.jpg",
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-03/105820/AM_105820_2026113_132011_14290_ad.jpg"
+   ],
+   "scope": "TAPIS",
+   "scraped_at": "2026-11-03T14:54:59.084137",
+   "slug": "649365-rehabilitation-et-restauration-de-la-mosquee-abdellah-bnou-salam-oran",
+   "titre": "réhabilitation et restauration de la mosquée abdellah bnou salam oran.",
+   "type_annonce": "appels-doffres",
+   "url": "https://algeriemarches.com/annonces/649365-rehabilitation-et-restauration-de-la-mosquee-abdellah-bnou-salam-oran",
+   "wilaya": "Oran"
+  },
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "match"
+ },
+ "105929": {
+  "checked": "2026-11-03",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
  "94634": {
   "checked": "2026-10-24",
   "reason": "no explicit gazon/tapis in text or scan",
