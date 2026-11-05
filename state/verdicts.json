@@ -624,6 +624,13 @@
   "v": 2,
   "verdict": "reject"
  },
+ "105960": {
+  "checked": "2026-11-05",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
  "106377": {
   "checked": "2026-11-04",
   "reason": "no explicit gazon/tapis in text or scan",
@@ -635,6 +642,156 @@
   "checked": "2026-11-04",
   "reason": "no explicit gazon/tapis in text or scan",
   "type": "appels-doffres",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "107003": {
+  "checked": "2026-11-05",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "107162": {
+  "checked": "2026-11-05",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "107225": {
+  "checked": "2026-11-05",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "107451": {
+  "checked": "2026-11-05",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "107544": {
+  "checked": "2026-11-05",
+  "row": {
+   "action": "RÉHABILITATION",
+   "annonceur": "direction du budget, de la comptabilité et du patrimoine",
+   "code_annonce": "05/11/2026",
+   "commune": "/",
+   "date_echeance": "2026-11-14",
+   "date_parution": "2026-11-05",
+   "date_parution_ao": "/",
+   "delai": "/",
+   "entreprise_concernee": "",
+   "id": "107544",
+   "lots": [
+    {
+     "budget": "/",
+     "commune": "BIRKHADEM",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": false,
+     "numero": "01",
+     "objet": "DEUX AIRES DE JEUX à LAKHDAR BOUCHET BIRKHADEM - AIRE DE JEUX LOTISSEMENT SIDI M'BAREK BIRKHADEM - AIRE DE JEUX CITE 804 LOGTS BIRKHADEM - AIRE DE JEUX CITE 368 LOGTS DJENANE SFARI BIRKHADEM"
+    },
+    {
+     "budget": "/",
+     "commune": "OUED KORICHE",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": false,
+     "numero": "02",
+     "objet": "AIRE DE JEUX FRAIS VALON BEAU FRAISIER OUED KORICHE - AIRE DE JEUX CARRIERE JAUBERT OUED KORICHE - AIRE DE JEUX DIAR EL KAF DNC OUED KORICHE - AIRE DE JEUX FONTAINE FRAICHE OUED KORICHE"
+    },
+    {
+     "budget": "/",
+     "commune": "/",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": false,
+     "numero": "03",
+     "objet": "AIRE DE JEUX MERZAK DIB BELOUIZDAD - DEUX AIRES DE JEUX CERVENTES BELOUIZDAD- AIRE DE JEUX CITE OULAMI OULED FAYET- AIRE DE JEUX CITE 11 DECEMBRE 1960 OULED FAYET"
+    },
+    {
+     "budget": "/",
+     "commune": "AIN BENIAN",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": false,
+     "numero": "04",
+     "objet": "AIRE DE JEUX DJENANE NOUAR ELOUZ AIN BENIAN -AIRE DE JEUX LOTISSEMENT GRAND ROCHER AIN BENIAN - AIRE DE JEUX ROUTE EL DJAMILA AIN BENIAN - AIRE DE JEUX CITE RABEH BOUAZIZ AIN BENIAN - AIRE DE JEUX CITE 11 DECEMBRE AIN BENIAN - AIRE DE JEUX CITE GRAND ROCHER AIN BENIAN"
+    }
+   ],
+   "montant": "",
+   "nbr_jours": 0,
+   "ptype": "AIRE DE JEUX",
+   "run_id": "2026-11-05_15-12-30",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-05/107544/AM_107544_2026115_12724_29154_ad.jpg",
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-05/107544/AM_107544_2026115_12724_59384_ad.jpg"
+   ],
+   "scope": "GAZON",
+   "scraped_at": "2026-11-05T15:17:32.769536",
+   "slug": "292598-travaux-de-rehabilitation-des-aires-de-jeux-a-travers-de-la-wilaya-dalger",
+   "titre": "Travaux de réhabilitation des aires de jeux à travers de la wilaya d'alger ",
+   "type_annonce": "appels-doffres",
+   "url": "https://algeriemarches.com/annonces/292598-travaux-de-rehabilitation-des-aires-de-jeux-a-travers-de-la-wilaya-dalger",
+   "wilaya": "Alger"
+  },
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "match"
+ },
+ "107585": {
+  "checked": "2026-11-05",
+  "row": {
+   "action": "RÉHABILITATION",
+   "annonceur": "Djs de la wilaya de Mostaganem",
+   "code_annonce": "04/2026",
+   "commune": "MOSTAGANEM",
+   "date_echeance": "2026-11-19",
+   "date_parution": "2026-11-05",
+   "date_parution_ao": "/",
+   "delai": "/",
+   "entreprise_concernee": "",
+   "id": "107585",
+   "lots": [
+    {
+     "budget": "/",
+     "commune": "MOSTAGANEM",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "01",
+     "objet": "Réhabilitation du terrain de football Mohamed Bensaid à Mostaganem en gazon naturel hybrid"
+    }
+   ],
+   "montant": "",
+   "nbr_jours": 0,
+   "ptype": "STADE",
+   "run_id": "2026-11-05_15-12-30",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-05/107585/AM_107585_2026115_122240_66290_ad.jpg",
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-05/107585/AM_107585_2026115_122240_24728_ad.jpg"
+   ],
+   "scope": "GAZON",
+   "scraped_at": "2026-11-05T15:14:57.866290",
+   "slug": "612450-rehabilitation-des-stades-et-terrain-de-sport-a-travers-la-wilaya-de-mostaganem",
+   "titre": "Réhabilitation des Stades et Terrain de Sport à Travers la Wilaya de Mostaganem",
+   "type_annonce": "appels-doffres",
+   "url": "https://algeriemarches.com/annonces/612450-rehabilitation-des-stades-et-terrain-de-sport-a-travers-la-wilaya-de-mostaganem",
+   "wilaya": "Mostaganem"
+  },
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "match"
+ },
+ "107657": {
+  "checked": "2026-11-05",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
   "v": 2,
   "verdict": "reject"
  },
