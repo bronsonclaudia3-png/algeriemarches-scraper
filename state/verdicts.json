@@ -795,6 +795,109 @@
   "v": 2,
   "verdict": "reject"
  },
+ "108419": {
+  "checked": "2026-11-08",
+  "row": {
+   "action": "FOURNITURE",
+   "annonceur": "entreprise nationale de communication d'édition et de publicité filiale communication et signalisation",
+   "code_annonce": "15/ANEP-CS/2026",
+   "commune": "/",
+   "date_echeance": "2027-01-31",
+   "date_parution": "2026-11-08",
+   "date_parution_ao": "28/10/2026",
+   "delai": "/",
+   "entreprise_concernee": "eurl ,star flag",
+   "id": "108419",
+   "lots": [
+    {
+     "budget": "/",
+     "commune": "/",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "02",
+     "objet": "Fourniture de moquette événementielle, quantité : 4 750 m'."
+    }
+   ],
+   "montant": 6900,
+   "nbr_jours": 0,
+   "ptype": "MOQUETTE",
+   "run_id": "2026-11-08_14-05-53",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-08/108419/AM_108419_2026118_8338_72073_ad.jpg"
+   ],
+   "scope": "TAPIS",
+   "scraped_at": "2026-11-08T14:12:24.534832",
+   "slug": "816534-fourniture-des-produits-suivants",
+   "titre": "Fourniture des produits suivants ",
+   "type_annonce": "avis-attribution",
+   "url": "https://algeriemarches.com/annonces/816534-fourniture-des-produits-suivants",
+   "wilaya": "Alger"
+  },
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "match"
+ },
+ "108596": {
+  "checked": "2026-11-08",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "108795": {
+  "checked": "2026-11-08",
+  "row": {
+   "action": "RÉALISATION",
+   "annonceur": "Commune de Sidi Ameur",
+   "code_annonce": "11/2026",
+   "commune": "SIDI AMEUR",
+   "date_echeance": "2026-11-17",
+   "date_parution": "2026-11-08",
+   "date_parution_ao": "/",
+   "delai": "/",
+   "entreprise_concernee": "",
+   "id": "108795",
+   "lots": [
+    {
+     "budget": "/",
+     "commune": "SIDI AMEUR",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "02",
+     "objet": "Réaménagement de l'aire de jeux de l'école Achour El Hadj, située dans la zone d'El-Kharza, et revêtement de celle-ci en gazon synthétique."
+    },
+    {
+     "budget": "/",
+     "commune": "SIDI AMEUR",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "03",
+     "objet": "Réaménagement de l'aire de jeux de l'école Ziad Ahmed et revêtement de celle-ci en gazon synthétique."
+    }
+   ],
+   "montant": "",
+   "nbr_jours": 0,
+   "ptype": "AIRE DE JEUX",
+   "run_id": "2026-11-08_14-05-53",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-08/108795/AM_108795_2026118_12189_35649_ad.jpg",
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-08/108795/AM_108795_2026118_12189_85863_ad.jpg"
+   ],
+   "scope": "GAZON",
+   "scraped_at": "2026-11-08T14:08:32.339324",
+   "slug": "996531-realisation-de-divers-travaux",
+   "titre": "Réalisation de divers travaux ",
+   "type_annonce": "appels-doffres",
+   "url": "https://algeriemarches.com/annonces/996531-realisation-de-divers-travaux",
+   "wilaya": "Bou Saâda"
+  },
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "match"
+ },
  "94634": {
   "checked": "2026-10-24",
   "reason": "no explicit gazon/tapis in text or scan",
