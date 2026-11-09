@@ -898,6 +898,224 @@
   "v": 2,
   "verdict": "match"
  },
+ "108998": {
+  "checked": "2026-11-09",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "109072": {
+  "checked": "2026-11-09",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "109125": {
+  "checked": "2026-11-09",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "109247": {
+  "checked": "2026-11-09",
+  "row": {
+   "action": "TRAVAUX",
+   "annonceur": "l'epe spa Algeria exhibitions",
+   "code_annonce": "05/DG/2026",
+   "commune": "ALGER",
+   "date_echeance": "2026-11-23",
+   "date_parution": "2026-11-09",
+   "date_parution_ao": "/",
+   "delai": "/",
+   "entreprise_concernee": "",
+   "id": "109247",
+   "lots": [
+    {
+     "budget": "/",
+     "commune": "ALGER",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "01",
+     "objet": "acquisition de moquette aiguilletée ignifuge, avec film de protection, en largeurs 2 m – 3 m – 4 m."
+    }
+   ],
+   "montant": "",
+   "nbr_jours": 0,
+   "ptype": "MOQUETTE",
+   "run_id": "2026-11-09_17-12-35",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-09/109247/AM_109247_2026119_91117_20727_ad.jpg",
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-09/109247/AM_109247_2026119_91117_85289_ad.jpg"
+   ],
+   "scope": "TAPIS",
+   "scraped_at": "2026-11-09T17:19:19.001869",
+   "slug": "466527-acquisition-de-moquette-aiguilletee-ignifuge-avec-film-de-protection-en-largeurs-2-m-3-m-4-m",
+   "titre": "Acquisition de moquette aiguilletée ignifuge, avec film de protection, en largeurs 2 m -3 m - 4 m",
+   "type_annonce": "appels-doffres",
+   "url": "https://algeriemarches.com/annonces/466527-acquisition-de-moquette-aiguilletee-ignifuge-avec-film-de-protection-en-largeurs-2-m-3-m-4-m",
+   "wilaya": "Alger"
+  },
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "match"
+ },
+ "109441": {
+  "checked": "2026-11-09",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "109501": {
+  "checked": "2026-11-09",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "109541": {
+  "checked": "2026-11-09",
+  "row": {
+   "action": "RÉALISATION ET REVÊTEMENT",
+   "annonceur": "Djs de la wilaya d'El Meniaa",
+   "code_annonce": "17/2026",
+   "commune": "VIEUX KSAR",
+   "date_echeance": "2027-01-31",
+   "date_parution": "2026-11-09",
+   "date_parution_ao": "04/10/2026",
+   "delai": "90 JOURS",
+   "entreprise_concernee": "enterprise EURL HYDROBAT  SERVICES",
+   "id": "109541",
+   "lots": [
+    {
+     "budget": "46 565 299.00 DA",
+     "commune": "VIEUX KSAR",
+     "delai": "90 JOURS",
+     "entreprise_attributaire": "HYDROBAT SERVICES",
+     "in_scope": true,
+     "numero": "01",
+     "objet": "Réalisation de revêtement en gazon synthétique pour stades de proximité Vieux Ksar."
+    }
+   ],
+   "montant": "46 565 299.00 DA",
+   "nbr_jours": 0,
+   "ptype": "TERRAIN DE SPORT",
+   "run_id": "2026-11-09_17-12-35",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-09/109541/AM_109541_2026119_121852_98604_ad.jpg"
+   ],
+   "scope": "GAZON",
+   "scraped_at": "2026-11-09T17:21:53.805073",
+   "slug": "928674-realisation-dun-revetement-en-gazon-synthetique-pour-le-terrain-de-sport-du-quartier-du-vieux-palais",
+   "titre": "Réalisation d'un revêtement en gazon synthétique pour le terrain de sport du quartier du Vieux-Palais.",
+   "type_annonce": "avis-attribution",
+   "url": "https://algeriemarches.com/annonces/928674-realisation-dun-revetement-en-gazon-synthetique-pour-le-terrain-de-sport-du-quartier-du-vieux-palais",
+   "wilaya": "El Meniaa"
+  },
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "match"
+ },
+ "109558": {
+  "checked": "2026-11-09",
+  "row": {
+   "action": "AMÉNAGEMENT ET REVÊTEMENT",
+   "annonceur": "Commune d'illoula oumalou",
+   "code_annonce": "01/2026",
+   "commune": "ILLOULA OUMALOU",
+   "date_echeance": "2026-11-23",
+   "date_parution": "2026-11-09",
+   "date_parution_ao": "/",
+   "delai": "/",
+   "entreprise_concernee": "",
+   "id": "109558",
+   "lots": [
+    {
+     "budget": "/",
+     "commune": "ILLOULA OUMALOU",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "01",
+     "objet": "Aménagement et revêtement en gazon synthétique d'une aire de jeux au village Lemsella."
+    },
+    {
+     "budget": "/",
+     "commune": "ILLOULA OUMALOU",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "02",
+     "objet": "Aménagement et revêtement en gazon synthétique d'une aire de jeux au village Ait Ali Oumohand."
+    }
+   ],
+   "montant": "",
+   "nbr_jours": 0,
+   "ptype": "AIRE DE JEUX",
+   "run_id": "2026-11-09_17-12-35",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-09/109558/AM_109558_2026119_12261_74955_ad.jpg",
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-09/109558/AM_109558_2026119_12261_68003_ad.jpg"
+   ],
+   "scope": "GAZON",
+   "scraped_at": "2026-11-09T17:15:21.613483",
+   "slug": "538718-amenagement-et-revetement-en-gazon-synthetique-de-deux-02-aires-de-jeux-au-village-lemseila-et-au-village-att-all-oumoband",
+   "titre": "Aménagement et revêtement en gazon synthétique de deux (02) aires de jeux au village Lemseila et au village Att All Oumoband",
+   "type_annonce": "appels-doffres",
+   "url": "https://algeriemarches.com/annonces/538718-amenagement-et-revetement-en-gazon-synthetique-de-deux-02-aires-de-jeux-au-village-lemseila-et-au-village-att-all-oumoband",
+   "wilaya": "Tizi Ouzou"
+  },
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "match"
+ },
+ "109834": {
+  "checked": "2026-11-09",
+  "row": {
+   "action": "RÉALISATION",
+   "annonceur": "Commune d'Ammi Moussa",
+   "code_annonce": "31/2026",
+   "commune": "AMMI MOUSSA",
+   "date_echeance": "2027-01-31",
+   "date_parution": "2026-11-08",
+   "date_parution_ao": "/",
+   "delai": "30 JOURS",
+   "entreprise_concernee": "LAKHDARI RAFIK ",
+   "id": "109834",
+   "lots": [
+    {
+     "budget": "4 457 740,00 DA",
+     "commune": "AMMI MOUSSA",
+     "delai": "30 JOURS",
+     "entreprise_attributaire": "LAKHDARI RAFIK",
+     "in_scope": true,
+     "numero": "01",
+     "objet": "إنجاز ساحة لعب بالعشب الاصطناعي بمدرسة الشهيد بن شهيدة محمد ( نفطال )"
+    }
+   ],
+   "montant": "4 457 740,00 DA",
+   "nbr_jours": 0,
+   "ptype": "AIRE DE JEUX",
+   "run_id": "2026-11-09_17-12-35",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-08/109834/AM_109834_2026119_152629_99468_ad.jpg"
+   ],
+   "scope": "GAZON",
+   "scraped_at": "2026-11-09T17:22:20.783974",
+   "slug": "583699-realisation-aire-de-jeux-en-gazon-synthetique",
+   "titre": "Réalisation aire de jeux en gazon synthétique ",
+   "type_annonce": "avis-attribution",
+   "url": "https://algeriemarches.com/annonces/583699-realisation-aire-de-jeux-en-gazon-synthetique",
+   "wilaya": "Relizane"
+  },
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "match"
+ },
  "94634": {
   "checked": "2026-10-24",
   "reason": "no explicit gazon/tapis in text or scan",
