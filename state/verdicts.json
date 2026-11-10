@@ -1116,6 +1116,92 @@
   "v": 2,
   "verdict": "match"
  },
+ "109906": {
+  "checked": "2026-11-10",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "109946": {
+  "checked": "2026-11-10",
+  "row": {
+   "action": "RÉALISATION",
+   "annonceur": "Djs de la wilaya d'Oum El Bouaghi",
+   "code_annonce": "13/2026",
+   "commune": "ZORG",
+   "date_echeance": "2026-11-24",
+   "date_parution": "2026-11-10",
+   "date_parution_ao": "/",
+   "delai": "/",
+   "entreprise_concernee": "",
+   "id": "109946",
+   "lots": [
+    {
+     "budget": "/",
+     "commune": "ZORG",
+     "delai": "06 MOIS",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "10",
+     "objet": "deux (02) stades de football en gazon synthétique et bloc vestiaires."
+    }
+   ],
+   "montant": "",
+   "nbr_jours": 0,
+   "ptype": "STADE DE FOOTBALL",
+   "run_id": "2026-11-10_15-25-59",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-10/109946/AM_109946_20261110_8314_75961_ad.jpg",
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-10/109946/AM_109946_20261110_8314_97861_ad.jpg"
+   ],
+   "scope": "GAZON",
+   "scraped_at": "2026-11-10T15:31:49.776944",
+   "slug": "725071-realisation-dun-centre-de-regroupement-sportif-a-zorg",
+   "titre": "Réalisation d'un centre de regroupement sportif a zorg ",
+   "type_annonce": "appels-doffres",
+   "url": "https://algeriemarches.com/annonces/725071-realisation-dun-centre-de-regroupement-sportif-a-zorg",
+   "wilaya": "Oum El Bouaghi"
+  },
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "match"
+ },
+ "110201": {
+  "checked": "2026-11-10",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "110221": {
+  "checked": "2026-11-10",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "110284": {
+  "checked": "2026-11-10",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "110315": {
+  "checked": "2026-11-10",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "110492": {
+  "checked": "2026-11-10",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
  "94634": {
   "checked": "2026-10-24",
   "reason": "no explicit gazon/tapis in text or scan",
