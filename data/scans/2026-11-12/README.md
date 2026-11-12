@@ -1,0 +1,9 @@
+# 📰 Newspaper Scans Gallery — 2026-11-12
+
+> Scans downloaded & OCR-analyzed (NVIDIA NIM / Gemini) for TAPIDOR
+
+| N° | Ad ID | Type | Action & Facility | Wilaya | Commune | Budget | Délai | Scans |
+| :---: | :---: | :---: | :--- | :---: | :---: | :---: | :---: | :---: |
+| 1 | [112235](https://algeriemarches.com/annonces/180624-travaux-complementaires-du-mise-a-niveau-du-complexe-de-proximite-de-loffice-du-parc-omnisport-de-wilaya-opow-mostaganem) | Appel d'Offres | **RÉALISATION**<br>TERRAIN DE FOOTBALL | Mostaganem | MOSTAGANEM | / | / | [AM_112235_20261112_135912_94812_ad.jpg](112235/AM_112235_20261112_135912_94812_ad.jpg)<br>[AM_112235_20261112_135912_29751_ad.jpg](112235/AM_112235_20261112_135912_29751_ad.jpg) |
+| 2 | [112202](https://algeriemarches.com/annonces/452955-amenagement-et-restauration-des-terrains-de-proximite-en-gazon-synthetique-a-travers-la-commune-de-skikda-par-15-lots) | Appel d'Offres | **AMÉNAGEMENT**<br>TERRAIN DE PROXIMITÉ | Skikda | SKIKDA | / | / | [AM_112202_20261112_133836_98970_ad.jpg](112202/AM_112202_20261112_133836_98970_ad.jpg)<br>[AM_112202_20261112_133836_19416_ad.jpg](112202/AM_112202_20261112_133836_19416_ad.jpg) |
+| 3 | [112174](https://algeriemarches.com/annonces/788447-etude-suivi-et-realisation-des-vestiaires-et-gazon-synthetique-au-stade-communale-saidi-djillali-realisation) | Avis d'Attribution | **RÉALISATION**<br>STADE COMMUNAL | Tiaret | FRENDA | 85 619 072.00 DA | 06 MOIS | [AM_112174_20261112_132155_98978_ad.jpg](112174/AM_112174_20261112_132155_98978_ad.jpg)<br>[AM_112174_20261112_132155_41036_ad.jpg](112174/AM_112174_20261112_132155_41036_ad.jpg) |

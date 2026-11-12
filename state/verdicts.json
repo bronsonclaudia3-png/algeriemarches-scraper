@@ -1237,6 +1237,292 @@
   "v": 2,
   "verdict": "reject"
  },
+ "111535": {
+  "checked": "2026-11-12",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "111804": {
+  "checked": "2026-11-12",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "111833": {
+  "checked": "2026-11-12",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "111957": {
+  "checked": "2026-11-12",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "112174": {
+  "checked": "2026-11-12",
+  "row": {
+   "action": "RÉALISATION",
+   "annonceur": "commune de frenda",
+   "code_annonce": "10/2026 ",
+   "commune": "FRENDA",
+   "date_echeance": "2027-01-31",
+   "date_parution": "2026-11-12",
+   "date_parution_ao": "19/10/2026",
+   "delai": "06 MOIS",
+   "entreprise_concernee": "SARL HAIDARI  MOHAMED FRENDA",
+   "id": "112174",
+   "lots": [
+    {
+     "budget": "85 619 072.00 DA",
+     "commune": "FRENDA",
+     "delai": "SIX (06) MOIS",
+     "entreprise_attributaire": "SARL HAIDARI MOHAMED FRENDA",
+     "in_scope": true,
+     "numero": "01",
+     "objet": "Étude Suivi Et Réalisation Des Vestiaires Et Gazon Synthétique Au Stade Communale Saldi Djillali (REALISATION"
+    }
+   ],
+   "montant": "85 619 072.00 DA",
+   "nbr_jours": 0,
+   "ptype": "STADE COMMUNAL",
+   "run_id": "2026-11-12_15-47-44",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-12/112174/AM_112174_20261112_132155_98978_ad.jpg",
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-12/112174/AM_112174_20261112_132155_41036_ad.jpg"
+   ],
+   "scope": "GAZON",
+   "scraped_at": "2026-11-12T15:55:13.378188",
+   "slug": "788447-etude-suivi-et-realisation-des-vestiaires-et-gazon-synthetique-au-stade-communale-saidi-djillali-realisation",
+   "titre": "Étude Suivi Et Réalisation Des Vestiaires Et Gazon Synthétique Au Stade Communale Saidi Djillali (REALISATION)",
+   "type_annonce": "avis-attribution",
+   "url": "https://algeriemarches.com/annonces/788447-etude-suivi-et-realisation-des-vestiaires-et-gazon-synthetique-au-stade-communale-saidi-djillali-realisation",
+   "wilaya": "Tiaret"
+  },
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "match"
+ },
+ "112202": {
+  "checked": "2026-11-12",
+  "row": {
+   "action": "AMÉNAGEMENT",
+   "annonceur": "Commune de Skikda",
+   "code_annonce": "63/2026",
+   "commune": "SKIKDA",
+   "date_echeance": "2026-11-26",
+   "date_parution": "2026-11-12",
+   "date_parution_ao": "/",
+   "delai": "/",
+   "entreprise_concernee": "",
+   "id": "112202",
+   "lots": [
+    {
+     "budget": "/",
+     "commune": "SKIKDA",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "01",
+     "objet": "AMENAGEMENT ET RESTAURATION DU TERRAIN DE PROXIMITE EN GAZON SYNTHETIQUE"
+    },
+    {
+     "budget": "/",
+     "commune": "SKIKDA",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "02",
+     "objet": "AMENAGEMENT ET RESTAURATION DU TERRAIN DE PROXIMITE EN GAZON SYNTHETIQUE"
+    },
+    {
+     "budget": "/",
+     "commune": "SKIKDA",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "03",
+     "objet": "AMENAGEMENT ET RESTAURATION DU TERRAIN DE PROXIMITE EN GAZON SYNTHETIQUE"
+    },
+    {
+     "budget": "/",
+     "commune": "SKIKDA",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "04",
+     "objet": "AMENAGEMENT ET RESTAURATION DU TERRAIN DE PROXIMITE EN GAZON SYNTHETIQUE"
+    },
+    {
+     "budget": "/",
+     "commune": "SKIKDA",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "05",
+     "objet": "AMENAGEMENT ET RESTAURATION DU TERRAIN DE PROXIMITE EN GAZON SYNTHETIQUE"
+    },
+    {
+     "budget": "/",
+     "commune": "SKIKDA",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "06",
+     "objet": "AMENAGEMENT ET RESTAURATION DU TERRAIN DE PROXIMITE EN GAZON SYNTHETIQUE"
+    },
+    {
+     "budget": "/",
+     "commune": "SKIKDA",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "07",
+     "objet": "AMENAGEMENT ET RESTAURATION DU TERRAIN DE PROXIMITE EN GAZON SYNTHETIQUE"
+    },
+    {
+     "budget": "/",
+     "commune": "SKIKDA",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "08",
+     "objet": "AMENAGEMENT ET RESTAURATION DU TERRAIN DE PROXIMITE CITE ISSA BOUKERMA"
+    },
+    {
+     "budget": "/",
+     "commune": "SKIKDA",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "09",
+     "objet": "AMENAGEMENT ET RESTAURATION DU TERRAIN DE PROXIMITE EN GAZON SYNTHETIQUE"
+    },
+    {
+     "budget": "/",
+     "commune": "SKIKDA",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "10",
+     "objet": "AMENAGEMENT ET RESTAURATION DU TERRAIN DE PROXIMITE CITE ZREMNA"
+    },
+    {
+     "budget": "/",
+     "commune": "SKIKDA",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "11",
+     "objet": "AMENAGEMENT ET RESTAURATION DU TERRAIN DE PROXIMITE CITE LARBI BEN MHIDI (CAMP EPIDEX)"
+    },
+    {
+     "budget": "/",
+     "commune": "SKIKDA",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "12",
+     "objet": "AMENAGEMENT ET RESTAURATION DU TERRAIN DE PROXIMITE EN GAZON SYNTHETIQUE"
+    },
+    {
+     "budget": "/",
+     "commune": "SKIKDA",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "13",
+     "objet": "AMENAGEMENT ET RESTAURATION DU TERRAIN DE PROXIMITE EN GAZON SYNTHETIQUE"
+    },
+    {
+     "budget": "/",
+     "commune": "SKIKDA",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "14",
+     "objet": "AMENAGEMENT ET RESTAURATION DU TERRAIN DE PROXIMITE EN GAZON SYNTHETIQUE"
+    },
+    {
+     "budget": "/",
+     "commune": "SKIKDA",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "15",
+     "objet": "AMENAGEMENT ET RESTAURATION DU TERRAIN DE PROXIMITE EN GAZON SYNTHETIQUE"
+    }
+   ],
+   "montant": "",
+   "nbr_jours": 0,
+   "ptype": "TERRAIN DE PROXIMITÉ",
+   "run_id": "2026-11-12_15-47-44",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-12/112202/AM_112202_20261112_133836_98970_ad.jpg",
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-12/112202/AM_112202_20261112_133836_19416_ad.jpg"
+   ],
+   "scope": "GAZON",
+   "scraped_at": "2026-11-12T15:51:44.490571",
+   "slug": "452955-amenagement-et-restauration-des-terrains-de-proximite-en-gazon-synthetique-a-travers-la-commune-de-skikda-par-15-lots",
+   "titre": "Aménagement et restauration des terrains de proximité en gazon synthétique à travers la commune de Skikda par 15 lots.",
+   "type_annonce": "appels-doffres",
+   "url": "https://algeriemarches.com/annonces/452955-amenagement-et-restauration-des-terrains-de-proximite-en-gazon-synthetique-a-travers-la-commune-de-skikda-par-15-lots",
+   "wilaya": "Skikda"
+  },
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "match"
+ },
+ "112235": {
+  "checked": "2026-11-12",
+  "row": {
+   "action": "RÉALISATION",
+   "annonceur": "Dep de la wilaya de Mostaganem",
+   "code_annonce": "48/AAO/DFP/2026",
+   "commune": "MOSTAGANEM",
+   "date_echeance": "2026-11-21",
+   "date_parution": "2026-11-12",
+   "date_parution_ao": "/",
+   "delai": "/",
+   "entreprise_concernee": "",
+   "id": "112235",
+   "lots": [
+    {
+     "budget": "/",
+     "commune": "MOSTAGANEM",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "36",
+     "objet": "Réalisation des travaux complémentaire de l'aménagement extérieur et renouvellement du gazon synthétique des (03) terrains de football."
+    }
+   ],
+   "montant": "",
+   "nbr_jours": 0,
+   "ptype": "TERRAIN DE FOOTBALL",
+   "run_id": "2026-11-12_15-47-44",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-12/112235/AM_112235_20261112_135912_94812_ad.jpg",
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-12/112235/AM_112235_20261112_135912_29751_ad.jpg"
+   ],
+   "scope": "GAZON",
+   "scraped_at": "2026-11-12T15:50:26.559817",
+   "slug": "180624-travaux-complementaires-du-mise-a-niveau-du-complexe-de-proximite-de-loffice-du-parc-omnisport-de-wilaya-opow-mostaganem",
+   "titre": "Travaux complémentaires du Mise à niveau du complexe de proximité de l'office du parc omnisport de wilaya (OPOW) Mostaganem",
+   "type_annonce": "appels-doffres",
+   "url": "https://algeriemarches.com/annonces/180624-travaux-complementaires-du-mise-a-niveau-du-complexe-de-proximite-de-loffice-du-parc-omnisport-de-wilaya-opow-mostaganem",
+   "wilaya": "Mostaganem"
+  },
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "match"
+ },
  "94634": {
   "checked": "2026-10-24",
   "reason": "no explicit gazon/tapis in text or scan",
