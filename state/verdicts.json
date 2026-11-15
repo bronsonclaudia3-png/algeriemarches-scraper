@@ -1558,6 +1558,192 @@
   "v": 2,
   "verdict": "reject"
  },
+ "113114": {
+  "checked": "2026-11-15",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "113139": {
+  "checked": "2026-11-15",
+  "row": {
+   "action": "AMÉNAGEMENT ET REVÊTEMENT",
+   "annonceur": "Djs de la wilaya de Mostaganem",
+   "code_annonce": "05/2026",
+   "commune": "/",
+   "date_echeance": "2026-11-26",
+   "date_parution": "2026-11-12",
+   "date_parution_ao": "/",
+   "delai": "/",
+   "entreprise_concernee": "",
+   "id": "113139",
+   "lots": [
+    {
+     "budget": "/",
+     "commune": "AIN NOUISSY",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "01",
+     "objet": "تهيئة وتغطية بالعشب الاصطناعي للفضاء اللعب على مستوى القاعة المتعددة الرياضات بعين النويصي"
+    },
+    {
+     "budget": "/",
+     "commune": "HASSI MAMECHE",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "02",
+     "objet": "تهيئة وتغطية بالعشب الاصطناعي للفضاء اللعب على مستوى القاعة المتعددة الرياضات بحاسي مماش"
+    },
+    {
+     "budget": "/",
+     "commune": "MOSTAGANEM",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "03",
+     "objet": "تهيئة وتغطية بالعشب الاصطناعي للفضاء اللعب على مستوى القاعة المتعددة الرياضات بمستغانم"
+    },
+    {
+     "budget": "/",
+     "commune": "AIN TADLES",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "04",
+     "objet": "تهيئة وتغطية بالعشب الاصطناعي للفضاء اللعب على مستوى القاعة المتعددة الرياضات بعين تادلس"
+    }
+   ],
+   "montant": "",
+   "nbr_jours": 0,
+   "ptype": "AIRE DE JEUX",
+   "run_id": "2026-11-15_14-32-25",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-12/113139/AM_113139_20261115_7560_35817_ad.jpg"
+   ],
+   "scope": "GAZON",
+   "scraped_at": "2026-11-15T14:38:12.011210",
+   "slug": "606864-amenagement-et-revetement-en-gazon-synthetique-des-aires-de-jeux-au-sein-detablissements-sportifs-4-salles-omnisports",
+   "titre": "Aménagement et revêtement en gazon synthétique des aires de jeux au sein d'établissements sportifs : 4 salles omnisports",
+   "type_annonce": "appels-doffres",
+   "url": "https://algeriemarches.com/annonces/606864-amenagement-et-revetement-en-gazon-synthetique-des-aires-de-jeux-au-sein-detablissements-sportifs-4-salles-omnisports",
+   "wilaya": "Mostaganem"
+  },
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "match"
+ },
+ "113249": {
+  "checked": "2026-11-15",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "113310": {
+  "checked": "2026-11-15",
+  "row": {
+   "action": "AMÉNAGEMENT ET REVÊTEMENT",
+   "annonceur": "Commune de Bounoura",
+   "code_annonce": "08/ 2026",
+   "commune": "BOUNOURA",
+   "date_echeance": "2027-01-31",
+   "date_parution": "2026-11-15",
+   "date_parution_ao": "18/03/2026",
+   "delai": "/",
+   "entreprise_concernee": "RZZOUG FARES/ DJEDRIT ARDELHAAIED",
+   "id": "113310",
+   "lots": [
+    {
+     "budget": "9 929 455,20 DA",
+     "commune": "BOUNOURA",
+     "delai": "60 jours",
+     "entreprise_attributaire": "DJEDBIT ABDELHAMID",
+     "in_scope": true,
+     "numero": "02",
+     "objet": "Réalisation et revêtement des terrains aux écoles primaires avec gazon synthétique abi ishak, ibn khaldoun."
+    },
+    {
+     "budget": "11 751 428,50 DA",
+     "commune": "BOUNOURA",
+     "delai": "30 jours",
+     "entreprise_attributaire": "SELMANI ABDELHADI",
+     "in_scope": true,
+     "numero": "03",
+     "objet": "Réalisation et revêtement des terrains aux écoles primaires avec gazon synthétique hammou aissa nouri, sidi abaz novelle."
+    }
+   ],
+   "montant": "",
+   "nbr_jours": 0,
+   "ptype": "COUR ECOLE PRIMAIRE",
+   "run_id": "2026-11-15_14-32-25",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-15/113310/AM_113310_20261115_95527_39700_ad.jpg"
+   ],
+   "scope": "GAZON",
+   "scraped_at": "2026-11-15T14:41:57.371515",
+   "slug": "896182-amenagement-et-realisation-et-revetement-06-terrains-aux-ecoles-primaires-avec-gazon-synthetique",
+   "titre": "Aménagement et réalisation et revêtement 06 terrains aux écoles primaires avec gazon synthétique ",
+   "type_annonce": "avis-attribution",
+   "url": "https://algeriemarches.com/annonces/896182-amenagement-et-realisation-et-revetement-06-terrains-aux-ecoles-primaires-avec-gazon-synthetique",
+   "wilaya": "Ghardaïa"
+  },
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "match"
+ },
+ "113485": {
+  "checked": "2026-11-15",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "113610": {
+  "checked": "2026-11-15",
+  "row": {
+   "action": "AMÉNAGEMENT ET REVÊTEMENT",
+   "annonceur": "djs de la wilaya d'el taref",
+   "code_annonce": "",
+   "commune": "BOUHADJAR",
+   "date_echeance": "2027-01-31",
+   "date_parution": "2026-11-15",
+   "date_parution_ao": "28/07/2026",
+   "delai": "/",
+   "entreprise_concernee": "SARL EL  BORHANE TRAVAUX PUBLICS  UNIQUE  SETIF",
+   "id": "113610",
+   "lots": [
+    {
+     "budget": "/",
+     "commune": "BOUHADJAR",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "03",
+     "objet": "Revêtement en gazon synthétique + Clôture métallique intérieur + Eclairage du stade"
+    }
+   ],
+   "montant": 1000,
+   "nbr_jours": 0,
+   "ptype": "STADE",
+   "run_id": "2026-11-15_14-32-25",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-15/113610/AM_113610_20261115_134234_98824_ad.jpg"
+   ],
+   "scope": "GAZON",
+   "scraped_at": "2026-11-15T14:41:17.310061",
+   "slug": "742859-amenagement-et-revetement-en-gazon-synthetique-et-gradins-1000-places-de-stade-bouhadjar",
+   "titre": "aménagement et revêtement en gazon synthétique et gradins 1000 places de stade BOUHADJAR",
+   "type_annonce": "avis-attribution",
+   "url": "https://algeriemarches.com/annonces/742859-amenagement-et-revetement-en-gazon-synthetique-et-gradins-1000-places-de-stade-bouhadjar",
+   "wilaya": "El Tarf"
+  },
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "match"
+ },
  "94634": {
   "checked": "2026-10-24",
   "reason": "no explicit gazon/tapis in text or scan",
