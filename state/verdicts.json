@@ -1744,6 +1744,86 @@
   "v": 2,
   "verdict": "match"
  },
+ "113661": {
+  "checked": "2026-11-16",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "113934": {
+  "checked": "2026-11-16",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "113945": {
+  "checked": "2026-11-16",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "114103": {
+  "checked": "2026-11-16",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "114249": {
+  "checked": "2026-11-16",
+  "row": {
+   "action": "REVÊTEMENT",
+   "annonceur": "Direction de la formation et de l'enseignement professionnels de la wilaya d'El Bayadh",
+   "code_annonce": "07/2026",
+   "commune": "/",
+   "date_echeance": "2026-11-25",
+   "date_parution": "2026-11-16",
+   "date_parution_ao": "/",
+   "delai": "/",
+   "entreprise_concernee": "",
+   "id": "114249",
+   "lots": [
+    {
+     "budget": "/",
+     "commune": "BOUALEM",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "03",
+     "objet": "Travaux de revêtement de l'aire de jeux existant en gazon synthétique au profit du CFPA Boualem"
+    },
+    {
+     "budget": "/",
+     "commune": "EL ABLODH SID CHEIKH",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "04",
+     "objet": "Travaux de revêtement de l'aire de jeux existant en gazon synthétique au profit du CFPA El Ablodh Sid Cheikh"
+    }
+   ],
+   "montant": "",
+   "nbr_jours": 0,
+   "ptype": "AIRE DE JEUX",
+   "run_id": "2026-11-16_16-46-54",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-16/114249/AM_114249_20261116_132924_45821_ad.jpg"
+   ],
+   "scope": "GAZON",
+   "scraped_at": "2026-11-16T16:49:40.780849",
+   "slug": "120166-travaux-de-revetement-des-aires-de-jeux-existant-en-gazon-synthetique-au-profit-des-etablissements-de-la-formation-professionnelle",
+   "titre": "Travaux de revêtement des aires de jeux existant en gazon synthétique au profit des établissements de la Formation Professionnelle :",
+   "type_annonce": "appels-doffres",
+   "url": "https://algeriemarches.com/annonces/120166-travaux-de-revetement-des-aires-de-jeux-existant-en-gazon-synthetique-au-profit-des-etablissements-de-la-formation-professionnelle",
+   "wilaya": "El Bayadh"
+  },
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "match"
+ },
  "94634": {
   "checked": "2026-10-24",
   "reason": "no explicit gazon/tapis in text or scan",
