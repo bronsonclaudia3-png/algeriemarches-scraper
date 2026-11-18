@@ -1838,6 +1838,77 @@
   "v": 2,
   "verdict": "reject"
  },
+ "115262": {
+  "checked": "2026-11-18",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "115313": {
+  "checked": "2026-11-18",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "115353": {
+  "checked": "2026-11-18",
+  "row": {
+   "action": "RÉHABILITATION",
+   "annonceur": "Office du complexe olympique Mohamed Boudiaf",
+   "code_annonce": "10/OCO/2026",
+   "commune": "/",
+   "date_echeance": "2026-12-02",
+   "date_parution": "2026-11-18",
+   "date_parution_ao": "/",
+   "delai": "/",
+   "entreprise_concernee": "",
+   "id": "115353",
+   "lots": [
+    {
+     "budget": "/",
+     "commune": "/",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "02",
+     "objet": "réhabilitation d'un terrain annexe de football en gazon naturel au niveau du stade 5 Juillet"
+    }
+   ],
+   "montant": "",
+   "nbr_jours": 0,
+   "ptype": "STADE",
+   "run_id": "2026-11-18_16-14-06",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-18/115353/AM_115353_20261118_92853_93471_ad.jpg"
+   ],
+   "scope": "GAZON",
+   "scraped_at": "2026-11-18T16:18:02.661817",
+   "slug": "265997-rehabilitation-des-trois-03-terrains-annexes-de-football-au-niveau-du-stade-du-05-juillet",
+   "titre": "Réhabilitation des trois (03) terrains annexes de Football au niveau du stade du 05 juillet» ",
+   "type_annonce": "appels-doffres",
+   "url": "https://algeriemarches.com/annonces/265997-rehabilitation-des-trois-03-terrains-annexes-de-football-au-niveau-du-stade-du-05-juillet",
+   "wilaya": "Alger"
+  },
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "match"
+ },
+ "115557": {
+  "checked": "2026-11-18",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "115867": {
+  "checked": "2026-11-18",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
  "94634": {
   "checked": "2026-10-24",
   "reason": "no explicit gazon/tapis in text or scan",
