@@ -1909,6 +1909,122 @@
   "v": 2,
   "verdict": "reject"
  },
+ "116057": {
+  "checked": "2026-11-19",
+  "row": {
+   "action": "RÉALISATION ET REVÊTEMENT",
+   "annonceur": "commune d'ait khelili",
+   "code_annonce": "02/2026",
+   "commune": "AIT KHELILI",
+   "date_echeance": "2027-01-31",
+   "date_parution": "2026-11-19",
+   "date_parution_ao": "/",
+   "delai": "/",
+   "entreprise_concernee": "SNC BENAIDJA NOUREDINE ET FRERES/ SARL DERRICHETRAVAUX BATIMENTS",
+   "id": "116057",
+   "lots": [
+    {
+     "budget": "10.656.212,00DA",
+     "commune": "AIT KHELILI",
+     "delai": "02 Mois",
+     "entreprise_attributaire": "SARL DERRICHETRAVAUX BATIMENTS",
+     "in_scope": true,
+     "numero": "01",
+     "objet": "Réalisation et revêtement en gazon synthétique d'une aire de jeux au village Agoulmim sur 1800m2"
+    },
+    {
+     "budget": "5.114.620,00DA",
+     "commune": "AIT KHELILI",
+     "delai": "45 jours",
+     "entreprise_attributaire": "SNC BENAIDJA NOUREDDINE ET FRERES",
+     "in_scope": true,
+     "numero": "02",
+     "objet": "Réalisation et revêtement en gazon synthétique d'une aire de jeux au village El Klaa sur 800m2"
+    }
+   ],
+   "montant": 1800,
+   "nbr_jours": 0,
+   "ptype": "GAZON SYNTHÉTIQUE",
+   "run_id": "2026-11-19_16-21-05",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-19/116057/AM_116057_20261119_82136_12027_ad.jpg",
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-19/116057/AM_116057_20261119_82136_29032_ad.jpg"
+   ],
+   "scope": "GAZON",
+   "scraped_at": "2026-11-19T16:28:41.968241",
+   "slug": "801595-realisation-et-le-revetement-en-gazon-synthetique",
+   "titre": "Réalisation et le revêtement en gazon synthétique",
+   "type_annonce": "avis-attribution",
+   "url": "https://algeriemarches.com/annonces/801595-realisation-et-le-revetement-en-gazon-synthetique",
+   "wilaya": "Tizi Ouzou"
+  },
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "match"
+ },
+ "116107": {
+  "checked": "2026-11-19",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "116227": {
+  "checked": "2026-11-19",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "116345": {
+  "checked": "2026-11-19",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "116482": {
+  "checked": "2026-11-19",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "116484": {
+  "checked": "2026-11-19",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "116610": {
+  "checked": "2026-11-19",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "116658": {
+  "checked": "2026-11-19",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "116731": {
+  "checked": "2026-11-19",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "116738": {
+  "checked": "2026-11-19",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
  "94634": {
   "checked": "2026-10-24",
   "reason": "no explicit gazon/tapis in text or scan",
