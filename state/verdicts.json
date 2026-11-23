@@ -2225,6 +2225,13 @@
   "v": 2,
   "verdict": "match"
  },
+ "117719": {
+  "checked": "2026-11-23",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
  "117879": {
   "checked": "2026-11-22",
   "reason": "no explicit gazon/tapis in text or scan",
@@ -2236,6 +2243,13 @@
   "checked": "2026-11-22",
   "reason": "no explicit gazon/tapis in text or scan",
   "type": "appels-doffres",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "117935": {
+  "checked": "2026-11-23",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
   "v": 2,
   "verdict": "reject"
  },
@@ -2252,6 +2266,70 @@
   "type": "appels-doffres",
   "v": 2,
   "verdict": "reject"
+ },
+ "118332": {
+  "checked": "2026-11-23",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "118350": {
+  "checked": "2026-11-23",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "118960": {
+  "checked": "2026-11-23",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "119125": {
+  "checked": "2026-11-23",
+  "row": {
+   "action": "RÉALISATION",
+   "annonceur": "université de constantine 3 salah boubndir",
+   "code_annonce": "05/2026",
+   "commune": "CONSTANTINE",
+   "date_echeance": "2026-12-03",
+   "date_parution": "2026-11-22",
+   "date_parution_ao": "/",
+   "delai": "/",
+   "entreprise_concernee": "",
+   "id": "119125",
+   "lots": [
+    {
+     "budget": "/",
+     "commune": "CONSTANTINE",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "01",
+     "objet": "إنجاز الملاعب الرياضية (ملعب كرة القدم والملعب الرياضي متعدد الاختصاصات)"
+    }
+   ],
+   "montant": "",
+   "nbr_jours": 0,
+   "ptype": "TERRAIN DE SPORT",
+   "run_id": "2026-11-23_18-59-56",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-22/119125/AM_119125_20261123_15167_16982_ad.jpg"
+   ],
+   "scope": "GAZON",
+   "scraped_at": "2026-11-23T19:03:08.534083",
+   "slug": "424472-realisation-de-terrains-de-sport-polyvalents-matiko-et-gazon-synthetique-a-luniversite-de-constantine-3-en-trois-03-lots-distincts",
+   "titre": "Réalisation de terrains de sport polyvalents (Matiko et gazon synthétique) à l'université de Constantine 3, en trois (03) lots distincts.",
+   "type_annonce": "appels-doffres",
+   "url": "https://algeriemarches.com/annonces/424472-realisation-de-terrains-de-sport-polyvalents-matiko-et-gazon-synthetique-a-luniversite-de-constantine-3-en-trois-03-lots-distincts",
+   "wilaya": "Constantine"
+  },
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "match"
  },
  "94634": {
   "checked": "2026-10-24",
