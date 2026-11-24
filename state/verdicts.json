@@ -2331,6 +2331,174 @@
   "v": 2,
   "verdict": "match"
  },
+ "119313": {
+  "checked": "2026-11-24",
+  "row": {
+   "action": "RÉHABILITATION",
+   "annonceur": "Djs de la wilaya de Tamanrasset",
+   "code_annonce": "04/2026",
+   "commune": "TAMANRASSET",
+   "date_echeance": "2027-01-31",
+   "date_parution": "2026-11-24",
+   "date_parution_ao": "/",
+   "delai": "/",
+   "entreprise_concernee": "sarl irs derich// ben swiwwi bachir",
+   "id": "119313",
+   "lots": [
+    {
+     "budget": "132 894 440,00 DA",
+     "commune": "TAMANRASSET",
+     "delai": "6 MOIS",
+     "entreprise_attributaire": "SARL «IRS DERICH»",
+     "in_scope": true,
+     "numero": "01",
+     "objet": "Réalisation d'une piste d'athlétisme de 400 mètres et couverture du terrain en gazon synthétique."
+    }
+   ],
+   "montant": "",
+   "nbr_jours": 0,
+   "ptype": "SALLE DE SPORT",
+   "run_id": "2026-11-24_18-40-27",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-24/119313/AM_119313_20261124_9857_95693_ad.jpg",
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-24/119313/AM_119313_20261124_9857_78427_ad.jpg"
+   ],
+   "scope": "GAZON",
+   "scraped_at": "2026-11-24T18:48:02.241608",
+   "slug": "488753-rehabilitation-extension-et-amelioration-du-niveau-du-complexe-sportif-de-tamanrasset",
+   "titre": "Réhabilitation, extension et amélioration du niveau du complexe sportif de Tamanrasset.",
+   "type_annonce": "avis-attribution",
+   "url": "https://algeriemarches.com/annonces/488753-rehabilitation-extension-et-amelioration-du-niveau-du-complexe-sportif-de-tamanrasset",
+   "wilaya": "Tamanrasset"
+  },
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "match"
+ },
+ "119400": {
+  "checked": "2026-11-24",
+  "row": {
+   "action": "AMÉNAGEMENT ET REVÊTEMENT",
+   "annonceur": "Commune d'Oued Nini",
+   "code_annonce": "24/11/2026",
+   "commune": "OUED NINI",
+   "date_echeance": "2026-12-03",
+   "date_parution": "2026-11-24",
+   "date_parution_ao": "/",
+   "delai": "/",
+   "entreprise_concernee": "",
+   "id": "119400",
+   "lots": [
+    {
+     "budget": "/",
+     "commune": "OUED NINI",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "01",
+     "objet": "Aménagement du stade communal de la commune de Oued Nini en gazon synthétique Partie 02 : revêtement du terrain en gazon synthétique"
+    }
+   ],
+   "montant": "",
+   "nbr_jours": 0,
+   "ptype": "STADE COMMUNAL",
+   "run_id": "2026-11-24_18-40-27",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-24/119400/AM_119400_20261124_9505_37903_ad.jpg",
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-24/119400/AM_119400_20261124_9505_99470_ad.jpg"
+   ],
+   "scope": "GAZON",
+   "scraped_at": "2026-11-24T18:43:18.737043",
+   "slug": "723497-amenagement-du-stade-communal-de-la-commune-de-oued-nini-en-gazon-synthetique-partie-02-revetement-du-terrain-en-gazon-synthetique",
+   "titre": "Aménagement du stade communal de la commune de oued Nini en gazon synthétique Partie 02 revêtement du terrain en gazon synthétique",
+   "type_annonce": "appels-doffres",
+   "url": "https://algeriemarches.com/annonces/723497-amenagement-du-stade-communal-de-la-commune-de-oued-nini-en-gazon-synthetique-partie-02-revetement-du-terrain-en-gazon-synthetique",
+   "wilaya": "Oum El Bouaghi"
+  },
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "match"
+ },
+ "119456": {
+  "checked": "2026-11-24",
+  "row": {
+   "action": "RÉALISATION",
+   "annonceur": "Djs de la wilaya d'Oran",
+   "code_annonce": "27/DJS/2026",
+   "commune": "/",
+   "date_echeance": "2027-01-31",
+   "date_parution": "2026-11-24",
+   "date_parution_ao": "14/10/2026",
+   "delai": "/",
+   "entreprise_concernee": "ETB MESSAOUDI YOUCEF/ EURL KATNNAG",
+   "id": "119456",
+   "lots": [
+    {
+     "budget": "6.266.540,00 DA",
+     "commune": "BOUFATIS",
+     "delai": "Vingt (20) jours",
+     "entreprise_attributaire": "ETB MESSAOUDI YOUCEF",
+     "in_scope": true,
+     "numero": "01",
+     "objet": "Un (01) Terrain (ECOLE BENOURAD ABD ELKADER AL GOTNI) BOUFATIS"
+    },
+    {
+     "budget": "6.326.040,00 DA",
+     "commune": "ES SENIA",
+     "delai": "Vingt-huit (28) jours",
+     "entreprise_attributaire": "EURL KATNNAG",
+     "in_scope": true,
+     "numero": "02",
+     "objet": "Un (01) Terrain (ECOLE BENDRAOI ABD ELKADER HAI KARA) Es senia"
+    },
+    {
+     "budget": "6.951.980,00 DA",
+     "commune": "ORAN",
+     "delai": "Un (01) Mois",
+     "entreprise_attributaire": "GROUPEMENT (FATH & BENOMAR)",
+     "in_scope": true,
+     "numero": "03",
+     "objet": "Un (01) Terrain (ECOLE HASSANE KOUIDER HAI LES AMANDIERS) ORAN"
+    },
+    {
+     "budget": "7.637.420,00 DA",
+     "commune": "BEN FRIHA",
+     "delai": "Vingt-huit (28) jours",
+     "entreprise_attributaire": "BELHIRECHE HOUCINE",
+     "in_scope": true,
+     "numero": "04",
+     "objet": "Un (01) Terrain (ECOLE ZWIECHE DJILALI) BEN FRIHA"
+    },
+    {
+     "budget": "5.127.174,50 DA",
+     "commune": "AIN EL TURCK",
+     "delai": "Soixante (60) jours",
+     "entreprise_attributaire": "MEGHERBI MUSTAPHA",
+     "in_scope": true,
+     "numero": "05",
+     "objet": "Un (01) Terrain (ECOLE MATAIL MOUSSA) AIN EL TURCK (réserver au micro entreprises)"
+    }
+   ],
+   "montant": "",
+   "nbr_jours": 0,
+   "ptype": "TERRAIN SPORTIF DE PROXIMITÉ",
+   "run_id": "2026-11-24_18-40-27",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-24/119456/AM_119456_20261124_10953_87450_ad.jpg",
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-24/119456/AM_119456_20261124_10953_23423_ad.jpg"
+   ],
+   "scope": "GAZON",
+   "scraped_at": "2026-11-24T18:46:45.775453",
+   "slug": "512387-realisation-de-05-terrains-sportifs-de-proximite-en-gazon-synthetique-a-travers-la-wilaya",
+   "titre": "Réalisation de (05) terrains sportifs de proximité en gazon synthétique à travers la wilaya",
+   "type_annonce": "avis-attribution",
+   "url": "https://algeriemarches.com/annonces/512387-realisation-de-05-terrains-sportifs-de-proximite-en-gazon-synthetique-a-travers-la-wilaya",
+   "wilaya": "Oran"
+  },
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "match"
+ },
  "94634": {
   "checked": "2026-10-24",
   "reason": "no explicit gazon/tapis in text or scan",
