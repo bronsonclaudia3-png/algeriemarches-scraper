@@ -2499,6 +2499,250 @@
   "v": 2,
   "verdict": "match"
  },
+ "120237": {
+  "checked": "2026-11-25",
+  "row": {
+   "action": "RÉHABILITATION",
+   "annonceur": "direction du budget, de la comptabilité et du patrimoine",
+   "code_annonce": "05/11/2026",
+   "commune": "/",
+   "date_echeance": "2027-01-31",
+   "date_parution": "2026-11-25",
+   "date_parution_ao": "10/09/2026",
+   "delai": "/",
+   "entreprise_concernee": "SARL BETA SPORT ET LOISIRS/ SARL SUD INFRASTRUCTURE",
+   "id": "120237",
+   "lots": [
+    {
+     "budget": "43 762 250.00 DA/TTC",
+     "commune": "BAB EL OUED, BAB EZZOUAR, BIR MOURAD RAIS, SAHOULA",
+     "delai": "45 JRS",
+     "entreprise_attributaire": "SARL BETA SPORT ET LOISIRS",
+     "in_scope": true,
+     "numero": "01",
+     "objet": "1/AIRE DE JEUX RACHID KOUACH BAB EL OUED 2/AIRE DE JEUX PARC TITOU BAB EZZOUAR 3/AIRE DE JEUX STADE ZITOUNA BIR MOURAD RAIS 4/AIRE DE JEUX ROUTE BABA ALI SAHOULA"
+    },
+    {
+     "budget": "46 493 300.00 DA /TTC",
+     "commune": "TESSALA EL MERDJA, SOUIDANIA",
+     "delai": "03 MOIS",
+     "entreprise_attributaire": "SARL SUD INFRASTRUCTURE",
+     "in_scope": true,
+     "numero": "02",
+     "objet": "1/AIRE DE JEUX TESSALA EL MERDJA CENTRE 2/AIRE DE JEUX CENTRE KERRAR MAHFOUD TESSALA EL MERDJA 3/AIRE DE JEUX CITE BELOTA SOUIDANIA 4/AIRE DE JEUX ZONE BOUHIRATE SOUIDANIA 5/AIRE DE JEUX LA CONSULAIRE SOUIDANIA"
+    }
+   ],
+   "montant": "",
+   "nbr_jours": 0,
+   "ptype": "AIRE DE JEUX",
+   "run_id": "2026-11-25_17-49-26",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-25/120237/AM_120237_20261125_83414_51883_ad.jpg",
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-25/120237/AM_120237_20261125_83414_62725_ad.jpg"
+   ],
+   "scope": "GAZON",
+   "scraped_at": "2026-11-25T17:57:42.666689",
+   "slug": "511251-travaux-de-rehabilitation-des-aires-de-jeux-a-travers-de-la-wilaya-dalger",
+   "titre": "Travaux de réhabilitation des aires de jeux à travers de la wilaya d'alger ",
+   "type_annonce": "avis-attribution",
+   "url": "https://algeriemarches.com/annonces/511251-travaux-de-rehabilitation-des-aires-de-jeux-a-travers-de-la-wilaya-dalger",
+   "wilaya": "Alger"
+  },
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "match"
+ },
+ "120293": {
+  "checked": "2026-11-25",
+  "row": {
+   "action": "TRAVAUX",
+   "annonceur": "EPE SPA ALGERIA EXHIBITIONS",
+   "code_annonce": "05/2026",
+   "commune": "MOHAMMADIA",
+   "date_echeance": "2026-12-06",
+   "date_parution": "2026-11-25",
+   "date_parution_ao": "/",
+   "delai": "/",
+   "entreprise_concernee": "",
+   "id": "120293",
+   "lots": [
+    {
+     "budget": "/",
+     "commune": "MOHAMMADIA",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "01",
+     "objet": "acquisition de moquette aiguilletée ignifuge, avec film de protection, en largeurs 2 m – 3 m – 4 m."
+    }
+   ],
+   "montant": "",
+   "nbr_jours": 0,
+   "ptype": "MOQUETTE",
+   "run_id": "2026-11-25_17-49-26",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-25/120293/AM_120293_20261125_8546_93942_ad.jpg",
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-25/120293/AM_120293_20261125_8546_22964_ad.jpg"
+   ],
+   "scope": "TAPIS",
+   "scraped_at": "2026-11-25T17:54:57.165910",
+   "slug": "483011-acquisition-de-moquette-aiguilletee-ignifuge-avec-film-de-protection-largeurs-2-m-3-m-et-4-m-par-algeria-exhibitions",
+   "titre": "Acquisition de moquette aiguilletée ignifuge avec film de protection (largeurs 2 m, 3 m et 4 m) par ALGERIA EXHIBITIONS.",
+   "type_annonce": "appels-doffres",
+   "url": "https://algeriemarches.com/annonces/483011-acquisition-de-moquette-aiguilletee-ignifuge-avec-film-de-protection-largeurs-2-m-3-m-et-4-m-par-algeria-exhibitions",
+   "wilaya": "Alger"
+  },
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "match"
+ },
+ "120656": {
+  "checked": "2026-11-25",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "120672": {
+  "checked": "2026-11-25",
+  "row": {
+   "action": "RÉALISATION",
+   "annonceur": "commune de Takhemaret",
+   "code_annonce": "24/2026",
+   "commune": "TAKHEMARET",
+   "date_echeance": "2026-12-04",
+   "date_parution": "2026-11-25",
+   "date_parution_ao": "/",
+   "delai": "/",
+   "entreprise_concernee": "",
+   "id": "120672",
+   "lots": [
+    {
+     "budget": "/",
+     "commune": "TAKHEMARET",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "01",
+     "objet": "Réalisation d'un terrain combiné en gazon synthétique à Bounouel"
+    },
+    {
+     "budget": "/",
+     "commune": "TAKHEMARET",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "02",
+     "objet": "Réalisation d'un terrain combiné en gazon synthétique à agglomération secondaire Guercha Bouazid"
+    },
+    {
+     "budget": "/",
+     "commune": "TAKHEMARET",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "03",
+     "objet": "Réalisation d'un terrain combiné en gazon synthétique à village Ouled Aoun"
+    }
+   ],
+   "montant": "",
+   "nbr_jours": 0,
+   "ptype": "TERRAIN DE SPORT",
+   "run_id": "2026-11-25_17-49-26",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-25/120672/AM_120672_20261125_123646_34246_ad.jpg",
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-25/120672/AM_120672_20261125_123646_35761_ad.jpg"
+   ],
+   "scope": "GAZON",
+   "scraped_at": "2026-11-25T17:54:41.356820",
+   "slug": "804809-realisation-de-trois-terrains-combines-en-gazon-synthetiques",
+   "titre": "Réalisation de trois terrains combinés en gazon synthétiques ",
+   "type_annonce": "appels-doffres",
+   "url": "https://algeriemarches.com/annonces/804809-realisation-de-trois-terrains-combines-en-gazon-synthetiques",
+   "wilaya": "Tiaret"
+  },
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "match"
+ },
+ "120703": {
+  "checked": "2026-11-25",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "120716": {
+  "checked": "2026-11-25",
+  "row": {
+   "action": "REVÊTEMENT",
+   "annonceur": "Djs de la wilaya de Mostaganem",
+   "code_annonce": "07/2026",
+   "commune": "/",
+   "date_echeance": "2026-12-09",
+   "date_parution": "2026-11-25",
+   "date_parution_ao": "/",
+   "delai": "/",
+   "entreprise_concernee": "",
+   "id": "120716",
+   "lots": [
+    {
+     "budget": "/",
+     "commune": "SIDI LAKHDAR",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "01",
+     "objet": "Réhabilitation et revêtement en gazon synthétique d'une aire de jeux au niveau CSP SIDI LAKHDAR"
+    },
+    {
+     "budget": "/",
+     "commune": "SOUR",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "02",
+     "objet": "Réhabilitation et revêtement en gazon synthétique d'une aire de jeux au niveau CSP SOUR"
+    },
+    {
+     "budget": "/",
+     "commune": "MESRA",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "03",
+     "objet": "Réhabilitation et revêtement en gazon synthétique d'une aire de jeux au niveau CSP MESRA"
+    },
+    {
+     "budget": "/",
+     "commune": "BENABD MALEK RAMANE",
+     "delai": "/",
+     "entreprise_attributaire": "/",
+     "in_scope": true,
+     "numero": "04",
+     "objet": "Réhabilitation et revêtement en gazon synthétique d'une aire de jeux au niveau CSP BENABD MALEK RAMANE"
+    }
+   ],
+   "montant": "",
+   "nbr_jours": 0,
+   "ptype": "GAZON SYNTHÉTIQUE",
+   "run_id": "2026-11-25_17-49-26",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-25/120716/AM_120716_20261125_125521_78340_ad.jpg",
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-25/120716/AM_120716_20261125_125521_94831_ad.jpg"
+   ],
+   "scope": "GAZON",
+   "scraped_at": "2026-11-25T17:52:04.367651",
+   "slug": "356287-rehabilitation-et-revetement-en-gazon-synthetique-des-aires-des-jeux-au-niveau-de-04-csp",
+   "titre": "Réhabilitation et revêtement en gazon synthétique des aires des jeux au niveau de (04) csp",
+   "type_annonce": "appels-doffres",
+   "url": "https://algeriemarches.com/annonces/356287-rehabilitation-et-revetement-en-gazon-synthetique-des-aires-des-jeux-au-niveau-de-04-csp",
+   "wilaya": "Mostaganem"
+  },
+  "type": "appels-doffres",
+  "v": 2,
+  "verdict": "match"
+ },
  "94634": {
   "checked": "2026-10-24",
   "reason": "no explicit gazon/tapis in text or scan",
