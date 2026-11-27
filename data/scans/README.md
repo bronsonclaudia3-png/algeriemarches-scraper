@@ -4,7 +4,6 @@
 
 | Date | Matched Ads | Gallery Link |
 | :---: | :---: | :---: |
-| **2026-11-26** | 0 ads | [📂 Browse Scans](2026-11-26/) |
 | **2026-11-25** | 4 ads | [📂 Browse Scans](2026-11-25/) |
 | **2026-11-24** | 3 ads | [📂 Browse Scans](2026-11-24/) |
 | **2026-11-22** | 1 ad | [📂 Browse Scans](2026-11-22/) |
