@@ -2764,6 +2764,63 @@
   "v": 2,
   "verdict": "reject"
  },
+ "122103": {
+  "checked": "2026-11-28",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "122292": {
+  "checked": "2026-11-28",
+  "reason": "no explicit gazon/tapis in text or scan",
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "reject"
+ },
+ "122314": {
+  "checked": "2026-11-28",
+  "row": {
+   "action": "TRAVAUX",
+   "annonceur": "Commune d'El Kheither",
+   "code_annonce": "",
+   "commune": "EL KHEITHER",
+   "date_echeance": "2027-01-31",
+   "date_parution": "2026-11-25",
+   "date_parution_ao": "/",
+   "delai": "04 JOURS",
+   "entreprise_concernee": "ویس جواد",
+   "id": "122314",
+   "lots": [
+    {
+     "budget": "3 749 511,50 DA",
+     "commune": "EL-KHEITHER",
+     "delai": "04 JOURS",
+     "entreprise_attributaire": "ويس جواد - مؤسسة الينا شهيناز",
+     "in_scope": true,
+     "numero": "01",
+     "objet": "اقتناء افرشة للمسجد العتيق بالخيثر+مسجد النوربقرية سيدي خليفة"
+    }
+   ],
+   "montant": "3 749 511,50 DA",
+   "nbr_jours": 0,
+   "ptype": "TAPIS MOSQUÉE",
+   "run_id": "2026-11-28_15-58-38",
+   "scans": [
+    "/home/runner/work/algeriemarches-scraper/algeriemarches-scraper/data/scans/2026-11-25/122314/AM_122314_20261128_111659_49494_ad.jpg"
+   ],
+   "scope": "TAPIS",
+   "scraped_at": "2026-11-28T16:05:11.484227",
+   "slug": "197719-acquisition-de-tapis-pour-la-mosquee-antique-dal-khaythar-et-la-mosquee-an-nour-dans-le-village-de-sidi-khalifa",
+   "titre": "Acquisition de tapis pour la mosquée antique d'Al-Khaythar et la mosquée An-Nour, dans le village de Sidi Khalifa",
+   "type_annonce": "avis-attribution",
+   "url": "https://algeriemarches.com/annonces/197719-acquisition-de-tapis-pour-la-mosquee-antique-dal-khaythar-et-la-mosquee-an-nour-dans-le-village-de-sidi-khalifa",
+   "wilaya": "El Bayadh"
+  },
+  "type": "avis-attribution",
+  "v": 2,
+  "verdict": "match"
+ },
  "94634": {
   "checked": "2026-10-24",
   "reason": "no explicit gazon/tapis in text or scan",
